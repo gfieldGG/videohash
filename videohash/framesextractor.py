@@ -95,9 +95,9 @@ class FramesExtractor:
 
                 self.ffmpeg_path = str(which("ffmpeg"))
 
-        # Check the ffmpeg
+        # Check the ffmpeg path
         try:
-            # check_output will raise FileNotFoundError if it does not finds the ffmpeg
+            # check_output will raise FileNotFoundError if it does not find ffmpeg
             output = check_output([str(self.ffmpeg_path), "-version"]).decode()
 
         except FileNotFoundError:

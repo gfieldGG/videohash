@@ -86,7 +86,9 @@ class VideoHash:
         )
 
         make_tile(
-            self.frames_dir, self.horizontally_concatenated_image_path, self.tiles_dir
+            self.frames_dir,
+            self.horizontally_concatenated_image_path,
+            self.tiles_dir,
         )
 
         self.image = Image.open(self.collage_path)
