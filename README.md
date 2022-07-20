@@ -66,17 +66,16 @@ Maintainer is  [@step21](https://github.com/step21)
 conda install -c conda-forge videohash
 ```
 
-**Install directly from [the](https://github.com/akamhy/videohash) GitHub repository (NOT recommended)**:
+**Install directly from [the](https://github.com/gfieldGG/videohash) GitHub repository (NOT recommended)**:
 
 ```bash
-pip install git+https://github.com/akamhy/videohash.git
+pip install git+https://github.com/gfieldGG/videohash.git
 ```
 
 --------------------------------------------------------------------------
 
 ### Features
 
-- Generate videohash of a video directly from its URL(uses [yt-dlp](https://github.com/yt-dlp/yt-dlp)) or its path.
 - Can be used as the core of a scalable Near Duplicate Video Retrieval (NDVR) system.
 - The end-user can access the image representation(the collage) of the video.
 - A videohash instance can be compared to a 64-bit stored hash, its hex representation, bitlist, and other videohash instances.
@@ -99,14 +98,14 @@ In the following usage example the first two and the fourth instance of VideoHas
 >>> from videohash import VideoHash
 >>> url1 = "https://user-images.githubusercontent.com/64683866/168872267-7c6682f8-7294-4d9a-8a68-8c6f44c06df6.mp4"
 >>> videohash1 = VideoHash(url=url1)
->>> 
+>>>
 >>> url2 = "https://user-images.githubusercontent.com/64683866/168869109-1f77c839-6912-4e24-8738-42cb15f3ab47.mp4"
 >>> videohash2 = VideoHash(url=url2)
 >>> videohash2 - videohash1
 2
 >>> videohash2.is_similar(videohash1)
 True
->>> 
+>>>
 >>> url3 = "https://user-images.githubusercontent.com/64683866/148960165-a210f2d2-6c41-4349-bd8d-a4cb673bc0af.mp4"
 >>> videohash3 = VideoHash(url=url3)
 >>> videohash3.is_similar(videohash1)
@@ -129,7 +128,7 @@ True
 True
 >>> videohash4.is_similar(videohash3)
 False
->>> 
+>>>
 ```
 
 **Extended Usage** : <https://github.com/akamhy/videohash/wiki/Extended-Usage>
@@ -147,9 +146,9 @@ False
   - [Sam Dobson](https://github.com/samdobson) for [image_slicer](https://github.com/samdobson/image_slicer), videohash incorporates some code from image_slicer.
   - [Eddievin](https://github.com/Eddievin) for README design.
   - [iconolocode](https://github.com/iconolocode) for the videohash logo.
- 
+
 --------------------------------------------------------------------------
-  
+
 ### License
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/akamhy/videohash/blob/main/LICENSE)

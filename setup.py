@@ -40,7 +40,6 @@ setup(
         "Pillow",
         "ImageHash",
         "imagedominantcolor",
-        "yt-dlp",
     ],
     python_requires=">=3.6",
     classifiers=[
