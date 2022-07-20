@@ -70,7 +70,13 @@ class VideoHash:
 
         self._create_required_dirs_and_check_for_errors()
 
-        FramesExtractor(self.video_path, self.frames_dir, interval=self.frame_interval)
+        self.video_duration = video_duration(self.path)
+        FramesExtractor(
+            self.path,
+            self.frames_dir,
+            duration=self.video_duration,
+            interval=self.frame_interval,
+        )
 
         self.collage_path = os.path.join(self.collage_dir, "collage.jpg")
 
@@ -94,7 +100,6 @@ class VideoHash:
         self.image = Image.open(self.collage_path)
         self.bits_in_hash = 64
         self.similar_percentage = 15
-        self.video_duration = video_duration(self.video_path)
 
         self._calc_hash()
 

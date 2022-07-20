@@ -27,6 +27,7 @@ class FramesExtractor:
         self,
         video_path: str,
         output_dir: str,
+        duration: float,
         interval: Union[int, float] = 1,
         ffmpeg_path: Optional[str] = None,
     ) -> None:
@@ -54,6 +55,7 @@ class FramesExtractor:
         """
         self.video_path = video_path
         self.output_dir = output_dir
+        self.duration = duration
         self.interval = interval
         self.ffmpeg_path = ""
         if ffmpeg_path:
@@ -112,7 +114,8 @@ class FramesExtractor:
 
     @staticmethod
     def detect_crop(
-        video_path: Optional[str] = None,
+        video_path: str,
+        duration: float,
         frames: int = 3,
         ffmpeg_path: Optional[str] = None,
     ) -> str:
@@ -128,27 +131,12 @@ class FramesExtractor:
 
         :rtype: str
         """
-
-        # We look upto the 120th minute into the video to detect the most
-        # precise crop value
-        time_start_list = [
-            2,
-            5,
-            10,
-            20,
-            40,
-            100,
-            300,
-            600,
-            1200,
-            2400,
-            7200,
-            14400,
-        ]
+        # generate timestamps to test
+        length = 8  # amount of samples to test TODO evaluate
+        timestamps = [1 + x * (duration - 1) / length for x in range(length)]
 
         crop_list = []
-
-        for start_time in time_start_list:
+        for start_time in timestamps:
 
             command = f'"{ffmpeg_path}" -ss {start_time} -i "{video_path}" -vframes {frames} -vf cropdetect -f null -'
 
@@ -165,7 +153,7 @@ class FramesExtractor:
                 crop_list.append(match)
 
         mode = None
-        if len(crop_list) > 0:
+        if crop_list:
             mode = max(crop_list, key=crop_list.count)
 
         crop = " "
@@ -186,6 +174,7 @@ class FramesExtractor:
 
         ffmpeg_path = self.ffmpeg_path
         video_path = self.video_path
+        duration = self.duration
         output_dir = self.output_dir
 
         if os.name == "posix":
@@ -194,7 +183,10 @@ class FramesExtractor:
             output_dir = shlex.quote(self.output_dir)
 
         crop = FramesExtractor.detect_crop(
-            video_path=video_path, frames=3, ffmpeg_path=ffmpeg_path
+            video_path=video_path,
+            duration=duration,
+            frames=3,
+            ffmpeg_path=ffmpeg_path,
         )
 
         command = (
