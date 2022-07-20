@@ -12,7 +12,6 @@ from imagedominantcolor import DominantColor
 from PIL import Image
 
 from .collagemaker import MakeCollage
-from .downloader import Download
 from .exceptions import DidNotSupplyPathOrUrl, StoragePathDoesNotExist
 from .framesextractor import FramesExtractor
 from .tilemaker import make_tile
@@ -33,27 +32,19 @@ class VideoHash:
 
     def __init__(
         self,
-        path: Optional[str] = None,
-        url: Optional[str] = None,
+        path: str,
         storage_path: Optional[str] = None,
-        download_worst: bool = False,
         frame_interval: Union[int, float] = 1,
     ) -> None:
         """
         :param path: Absolute path of the input video file.
 
-        :param url: URL of the input video file. Every URL that is supported by
-                    the yt-dlp package can be passed.
-
-        :param storage_path: Storage path for the files created/downloaded by
+        :param storage_path: Storage path for the files created by
                              the instance, pass the absolute path of the
                              directory.
                              If no argument is passed then the instance will
                              itself create the storage directory inside the
                              temporary directory of the system.
-
-        :param download_worst: If set to True, download the worst quality video.
-                               The default value is False, set True to conserve bandwidth.
 
         :param frame_interval: Number of frames extracted per unit time, the
                                default value is 1 per unit time. For 1 frame
@@ -67,21 +58,17 @@ class VideoHash:
         :rtype: NoneType
         """
         self.path = path
-        self.url = url
 
         self.storage_path = ""
         if storage_path:
             self.storage_path = storage_path
 
         self._storage_path = self.storage_path
-        self.download_worst = download_worst
         self.frame_interval = frame_interval
 
         self.task_uid = VideoHash._get_task_uid()
 
         self._create_required_dirs_and_check_for_errors()
-
-        self._copy_video_to_video_dir()
 
         FramesExtractor(self.video_path, self.frames_dir, interval=self.frame_interval)
 
@@ -256,62 +243,6 @@ class VideoHash:
             + "hexadecimal/binary strings or instance of VideoHash class."
         )
 
-    def _copy_video_to_video_dir(self) -> None:
-        """
-        Copy the video from the path to the video directory.
-
-        Copying avoids issues such as the user or some other
-        process deleting the instance files while we are still
-        processing.
-
-        If instead of the path the uploader specified an url,
-        then download the video and copy the file to video
-        directory.
-
-
-        :return: None
-
-        :rtype: NoneType
-
-        :raises ValueError: If the path supplied by the end user
-                            lacks an extension. E.g. webm, mkv and mp4.
-        """
-        self.video_path: str = ""
-
-        if self.path:
-            # create a copy of the video at self.storage_path
-            match = re.search(r"\.([^.]+$)", self.path)
-
-            if match:
-                extension = match.group(1)
-
-            else:
-                raise ValueError("File name (path) does not have an extension.")
-
-            self.video_path = os.path.join(self.video_dir, (f"video.{extension}"))
-
-            shutil.copyfile(self.path, self.video_path)
-
-        if self.url:
-
-            Download(
-                self.url,
-                self.video_download_dir,
-                worst=self.download_worst,
-            )
-
-            downloaded_file = get_list_of_all_files_in_dir(self.video_download_dir)[0]
-            match = re.search(r"\.(.*?)$", downloaded_file)
-
-            extension = "mkv"
-
-            if match:
-                extension = match.group(1)
-
-            self.video_path = f"{self.video_dir}video.{extension}"
-
-            shutil.copyfile(downloaded_file, self.video_path)
-
     def _create_required_dirs_and_check_for_errors(self) -> None:
         """
         Creates important directories before the main processing starts.
@@ -321,29 +252,12 @@ class VideoHash:
         generated files.
 
 
-        :raises DidNotSupplyPathOrUrl: If the user forgot to specify both the
-                                       path and the url. One of them must be
-                                       specified for creating the object.
-
-        :raises ValueError: If user passed both path and url. Only pass
-                            one of them if the file is available on both
-                            then pass the path only.
-
-        :raises StoragePathDoesNotExist: If the storage path specified by the
-                                         user does not exist.
+        :raises StoragePathDoesNotExist: If the storage path specified by the user does not exist.
 
         :return: None
 
         :rtype: NoneType
         """
-        if not self.path and not self.url:
-            raise DidNotSupplyPathOrUrl(
-                "You must specify either a path or an URL of the video."
-            )
-
-        if self.path and self.url:
-            raise ValueError("Specify either a path or an URL and NOT both.")
-
         if not self.storage_path:
             self.storage_path = create_and_return_temporary_directory()
         if not does_path_exists(self.storage_path):
@@ -356,14 +270,6 @@ class VideoHash:
         self.storage_path = os.path.join(
             self.storage_path, (f"{self.task_uid}{os_path_sep}")
         )
-
-        self.video_dir = os.path.join(self.storage_path, (f"video{os_path_sep}"))
-        Path(self.video_dir).mkdir(parents=True, exist_ok=True)
-
-        self.video_download_dir = os.path.join(
-            self.storage_path, (f"downloadedvideo{os_path_sep}")
-        )
-        Path(self.video_download_dir).mkdir(parents=True, exist_ok=True)
 
         self.frames_dir = os.path.join(self.storage_path, (f"frames{os_path_sep}"))
         Path(self.frames_dir).mkdir(parents=True, exist_ok=True)
@@ -407,7 +313,7 @@ class VideoHash:
         Delete the storage_path directory tree.
 
         Remember that deleting the storage directory will also delete the
-        collage, extracted frames, and the downloaded video. If you passed an
+        collage and the extracted frames. If you passed an
         argument to the storage_path that directory will not be deleted but
         only the files and directories created inside that directory by the
         instance will be deleted, this is a feature(not a bug) to ensure that
