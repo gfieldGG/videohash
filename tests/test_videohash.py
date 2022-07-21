@@ -90,7 +90,7 @@ def test_all():
     assert videohash1 != videohash4
     assert videohash2 != videohash4
     assert videohash3 != videohash4
-    assert videohash3.is_diffrent(videohash4)
+    assert videohash3.is_different(videohash4)
 
     with pytest.raises(ValueError):
         # not padded with 0x

@@ -110,7 +110,7 @@ True
 >>> videohash3 = VideoHash(url=url3)
 >>> videohash3.is_similar(videohash1)
 False
->>> videohash3.is_diffrent(videohash2)
+>>> videohash3.is_different(videohash2)
 True
 >>> videohash3-videohash1
 34
