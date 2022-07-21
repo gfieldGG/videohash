@@ -1,4 +1,5 @@
 *.ipynb
+temp/
 
 # Report
 report.html

@@ -136,18 +136,15 @@ class MakeCollage:
 
         # scale is the ratio of collage_image_width and product of
         # images_per_row_in_collage with frame_image_width.
-
-        # The scale will always lie between 0 and 1, which implies that
-        # the images are always going to get downsized.
         scale = (self.collage_image_width) / (
             self.images_per_row_in_collage * frame_image_width
         )
 
-        # Calculating the scaled height and width for the frame image.
+        # Calculating the scaled height and width for the frame image. # TODO aren't these always the same?
         scaled_frame_image_width = ceil(frame_image_width * scale)
         scaled_frame_image_height = ceil(frame_image_height * scale)
 
-        # Divide the number of images by images_per_row_in_collage. The later
+        # Divide the number of images by images_per_row_in_collage. The latter
         # was calculated by taking the square root of total number of images.
         number_of_rows = ceil(self.number_of_images / self.images_per_row_in_collage)
 
@@ -172,15 +169,16 @@ class MakeCollage:
             # Set the x coordinate to zero if we are on the first column
             # If self.images_per_row_in_collage is 4
             # then 0,4,8 and so on should have their x coordinate as 0
-            if (count % self.images_per_row_in_collage) == 0:
+            if not count % self.images_per_row_in_collage:
                 i = 0
 
-            # open the frame image, must open it to resize it using the thumbnail method
+            # open the frame image, must open it to resize it using the method
             frame = Image.open(frame_path)
 
             # scale the opened frame images
-            frame.thumbnail(
-                (scaled_frame_image_width, scaled_frame_image_height), Image.ANTIALIAS
+            # Other resampling filters would be faster, but should be negligible
+            frame = frame.resize(
+                (scaled_frame_image_width, scaled_frame_image_height), Image.LANCZOS
             )
 
             # set the value of x to that of i's value.
@@ -214,6 +212,6 @@ class MakeCollage:
             # therefore the y coordinate stays the same for any given row.
             j += 1
 
-        # save the base image with all the scaled frame images embeded on it.
+        # save the base image with all the scaled frame images embedded on it.
         collage_image.save(self.output_path)
         collage_image.close()
