@@ -36,6 +36,8 @@ def video_duration(video_path: str, ffmpeg_path: Optional[str] = None) -> float:
 
     if match:
         duration_string = match.group(1)
+    else:
+        return 0.0
 
     hours, minutes, seconds = duration_string.strip().split(":")
 
