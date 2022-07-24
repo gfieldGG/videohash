@@ -140,25 +140,22 @@ class FramesExtractor:
         :rtype: str
         """
         # generate timestamps to test
-        length = 8  # amount of samples to test TODO evaluate
+        length = 8  # amount of samples to test
         timestamps = [1 + x * (duration - 1) / length for x in range(length)]
 
-        crop_list: list[str] = []
-        for start_time in timestamps:
-
-            command = f'"{ffmpeg_path}" -ss {start_time} -i "{video_path}" -vframes {frames} -vf cropdetect -f null -'
-
-            process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)  # TODO runn
-
-            output, error = process.communicate()
-
-            matches = re.findall(
-                r"crop\=[0-9]{1,4}:[0-9]{1,4}:[0-9]{1,4}:[0-9]{1,4}",
-                (output.decode() + error.decode()),
+        commands = []
+        for ts in timestamps:
+            commands.append(
+                f'"{ffmpeg_path}" -ss {ts} -i "{video_path}" -vframes {frames} -vf cropdetect -f null -'
             )
 
-            for match in matches:
-                crop_list.append(match)
+        succ, outs = runn(commands, n=length)
+
+        crop_list: list[str] = []
+        for out in outs:
+            crop_list.extend(
+                re.findall(r"crop\=[0-9]{1,4}:[0-9]{1,4}:[0-9]{1,4}:[0-9]{1,4}", out)
+            )
 
         mode = None
         if crop_list:
@@ -215,9 +212,12 @@ class FramesExtractor:
                     ]
                 )
 
-            totalerrs = runn(commands, self.ffmpeg_threads)
+            succ, outs = runn(commands, self.ffmpeg_threads)
 
-            if (filenum := len(os.listdir(self.output_dir))) != self.frame_count:
+            if (
+                succ
+                and (filenum := len(os.listdir(self.output_dir))) != self.frame_count
+            ):
                 raise FFmpegFailedToExtractFrames(
                     f"Wrong number of frames extracted by FFmpeg. \nExpected {self.frame_count} got {filenum} in {self.output_dir}."
                 )
@@ -234,9 +234,9 @@ class FramesExtractor:
                 *str(self.interval),
                 output_dir + "video_frame_%07d.jpeg",
             ]
-            totalerrs = runn([command], n=1)
+            succ, outs = runn([command], n=1)
 
-        if totalerrs:
+        if not succ:
             raise FFmpegFailedToExtractFrames(
-                f"{totalerrs} errors while extracting {self.frame_count} frames using FFmpeg."
+                f"FFmpeg errors while extracting {self.frame_count} frames to {self.output_dir}:\n{outs[0]}"
             )

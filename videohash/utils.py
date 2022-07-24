@@ -53,9 +53,9 @@ def create_and_return_temporary_directory() -> str:
     return path
 
 
-def runn(commands: list[list[str]] | list[str], n: int = 4) -> int:
+def runn(commands: list[list[str]] | list[str], n: int = 4) -> tuple[bool, list[str]]:
     """
-    Run list of commands in batches of `n`.
+    Run list of commands in batches of `n`. Aborts on any non-zero exit code.
 
     https://stackoverflow.com/a/71743719/9356410
 
@@ -63,14 +63,20 @@ def runn(commands: list[list[str]] | list[str], n: int = 4) -> int:
     :param n: Number of commands to run in parallel per batch, defaults to 4. Has to be a multiple of `len(commands)`. TODO
     :return int: Count of non-zero returncodes.
     """
-    totalerrs = 0
+    outputs = []
     for j in range(max(int(len(commands) / n), 1)):
         procs = [
-            subprocess.Popen(i, shell=False)
+            subprocess.Popen(
+                i, shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE
+            )
             for i in commands[j * n : min((j + 1) * n, len(commands))]
         ]
         for p in procs:
-            if p.wait():
-                totalerrs += 1
+            out, err = p.communicate()
 
-    return totalerrs
+            if p.returncode:  # error
+                outputs.append(out.decode() + err.decode())
+                return False, outputs
+            outputs.append(out.decode() + err.decode())
+
+    return True, outputs
