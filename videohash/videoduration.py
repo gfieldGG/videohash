@@ -1,7 +1,8 @@
 import re
 from shutil import which
-from subprocess import PIPE, Popen
 from typing import Optional
+
+from .utils import runn
 
 # Module to determine the length of video.
 # The length is found by the FFmpeg, the output of video_duration is in seconds.
@@ -25,13 +26,12 @@ def video_duration(video_path: str, ffmpeg_path: Optional[str] = None) -> float:
     if not ffmpeg_path:
         ffmpeg_path = str(which("ffmpeg"))
 
-    command = f'"{ffmpeg_path}" -i "{video_path}"'
-    process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-    output, error = process.communicate()
+    command = [ffmpeg_path, "-i", video_path]
+    succ, outs = runn([command], 1, geterr=True)
 
     match = re.search(
         r"Duration\:(\s\d?\d\d\:\d\d\:\d\d\.\d\d)\,",
-        (output.decode() + error.decode()),
+        (outs[0]),
     )
 
     if match:
