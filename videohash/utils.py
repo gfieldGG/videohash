@@ -73,7 +73,7 @@ def runn(
                 shell=False,
                 stdout=subprocess.PIPE if getout else None,
                 stderr=subprocess.PIPE if geterr else None,
-                text=True,
+                text=False,
             )
             for i in commands[j * n : min((j + 1) * n, len(commands))]
         ]
@@ -81,7 +81,10 @@ def runn(
             out, err = p.communicate()
 
             if getout or geterr:
-                outputs.append(out or "" + err or "")
+                outputs.append(
+                    (out or b"").decode(errors="ignore")
+                    + (err or b"").decode(errors="ignore")
+                )
 
             if p.returncode:  # error
                 return False, outputs
