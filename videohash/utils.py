@@ -53,6 +53,10 @@ def create_and_return_temporary_directory() -> str:
     return path
 
 
+def argstostr(args) -> str:
+    return " ".join([f'"{x}"' if " " in x else x for x in args])
+
+
 def runn(
     commands: list[list[str]] | list[str], n: int = 4, geterr=False, getout=False
 ) -> tuple[bool, list[str]]:
@@ -65,6 +69,7 @@ def runn(
     :param n: Number of commands to run in parallel per batch, defaults to 4. HAS TO BE A MULTIPLE OF, LESS THAN OR EQUAL TO `len(commands)`.
     :return int: Count of non-zero returncodes.
     """
+    succ = True
     outputs = []
     for j in range(max(int(len(commands) / n), 1)):
         procs = [
@@ -87,6 +92,8 @@ def runn(
                 )
 
             if p.returncode:  # error
-                return False, outputs
+                if not getout or geterr:
+                    outputs.append(argstostr(p.args))
+                succ = False
 
     return True, outputs

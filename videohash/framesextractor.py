@@ -242,12 +242,12 @@ class FramesExtractor:
             succ, outs = runn([command], n=1)
 
         filenum = len(os.listdir(self.output_dir))
-        if filenum >= self.frame_count:
+        if filenum >= self.frame_count:  # frame_count is an estimate therefore >=
             return  # return even if we had errors cuz sometimes files be weird
 
         if not succ:
             raise FFmpegFailedToExtractFrames(
-                f"FFmpeg errors while extracting frames to {self.output_dir}"
+                f"FFmpeg errors while extracting frames with:\n'{outs[-1]}'"
             )
 
         raise FFmpegFailedToExtractFrames(
