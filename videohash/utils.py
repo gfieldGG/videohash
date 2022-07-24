@@ -2,6 +2,7 @@ import os
 import tempfile
 from pathlib import Path
 from typing import List
+import subprocess
 
 
 def get_list_of_all_files_in_dir(directory: str) -> List[str]:
@@ -50,3 +51,26 @@ def create_and_return_temporary_directory() -> str:
     path = os.path.join(tempfile.mkdtemp(), ("temp_storage_dir" + os.path.sep))
     Path(path).mkdir(parents=True, exist_ok=True)
     return path
+
+
+def runn(commands: list[list[str]] | list[str], n: int = 4) -> int:
+    """
+    Run list of commands in batches of `n`.
+
+    https://stackoverflow.com/a/71743719/9356410
+
+    :param commands: List of commands to run as either arglists or strings.
+    :param n: Number of commands to run in parallel per batch, defaults to 4. Has to be a multiple of `len(commands)`. TODO
+    :return int: Count of non-zero returncodes.
+    """
+    totalerrs = 0
+    for j in range(max(int(len(commands) / n), 1)):
+        procs = [
+            subprocess.Popen(i, shell=False)
+            for i in commands[j * n : min((j + 1) * n, len(commands))]
+        ]
+        for p in procs:
+            if p.wait():
+                totalerrs += 1
+
+    return totalerrs

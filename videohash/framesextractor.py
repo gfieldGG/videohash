@@ -11,7 +11,7 @@ from .exceptions import (
     FFmpegNotFound,
     FramesExtractorOutPutDirDoesNotExist,
 )
-from .utils import does_path_exists
+from .utils import does_path_exists, runn
 
 # python module to extract the frames from the input video.
 # Uses the FFmpeg Software to extract the frames.
@@ -28,7 +28,11 @@ class FramesExtractor:
         video_path: str,
         output_dir: str,
         duration: float,
-        interval: Union[int, float] = 1,
+        frame_count: int,
+        frame_size: int,
+        ffmpeg_threads: int,
+        interval: Union[int, float],
+        fixed: bool,
         ffmpeg_path: Optional[str] = None,
     ) -> None:
         """
@@ -56,7 +60,11 @@ class FramesExtractor:
         self.video_path = video_path
         self.output_dir = output_dir
         self.duration = duration
+        self.frame_count = frame_count
+        self.frame_size = frame_size
+        self.ffmpeg_threads = ffmpeg_threads
         self.interval = interval
+        self.fixed = fixed
         self.ffmpeg_path = ""
         if ffmpeg_path:
             self.ffmpeg_path = ffmpeg_path
@@ -118,7 +126,7 @@ class FramesExtractor:
         duration: float,
         frames: int = 3,
         ffmpeg_path: Optional[str] = None,
-    ) -> str:
+    ) -> list[str]:
         """
         Detects the the amount of cropping to remove black bars.
 
@@ -135,12 +143,12 @@ class FramesExtractor:
         length = 8  # amount of samples to test TODO evaluate
         timestamps = [1 + x * (duration - 1) / length for x in range(length)]
 
-        crop_list = []
+        crop_list: list[str] = []
         for start_time in timestamps:
 
             command = f'"{ffmpeg_path}" -ss {start_time} -i "{video_path}" -vframes {frames} -vf cropdetect -f null -'
 
-            process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
+            process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)  # TODO runn
 
             output, error = process.communicate()
 
@@ -156,11 +164,10 @@ class FramesExtractor:
         if crop_list:
             mode = max(crop_list, key=crop_list.count)
 
-        crop = " "
         if mode:
-            crop = f" -vf {mode} "
+            return ["-vf", mode]
 
-        return crop
+        return []
 
     def extract(self) -> None:
         """
@@ -177,11 +184,6 @@ class FramesExtractor:
         duration = self.duration
         output_dir = self.output_dir
 
-        if os.name == "posix":
-            ffmpeg_path = shlex.quote(self.ffmpeg_path)
-            video_path = shlex.quote(self.video_path)
-            output_dir = shlex.quote(self.output_dir)
-
         crop = FramesExtractor.detect_crop(
             video_path=video_path,
             duration=duration,
@@ -189,29 +191,52 @@ class FramesExtractor:
             ffmpeg_path=ffmpeg_path,
         )
 
-        command = (
-            f'"{ffmpeg_path}"'
-            + " -i "
-            + f'"{video_path}"'
-            + f"{crop}"
-            + " -s 144x144 "
-            + " -r "
-            + str(self.interval)
-            + " "
-            + '"'
-            + output_dir
-            + "video_frame_%07d.jpeg"
-            + '"'
-        )
+        if self.fixed:
+            # generate timestamps to extract
+            length = self.frame_count
+            timestamps = [0 + x * duration / length for x in range(length)]
 
-        process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-        output, error = process.communicate()
+            commands: list[list[str]] = []
+            for i, ts in enumerate(timestamps):
+                commands.append(
+                    [
+                        f"{ffmpeg_path}",
+                        "-ss",
+                        f"{ts}",
+                        "-i",
+                        f"{video_path}",
+                        *crop,
+                        "-frames:v",
+                        "1",
+                        "-s",
+                        f"{self.frame_size}x{self.frame_size}",
+                        output_dir
+                        + f"video_frame_{f'{i}'.zfill(len(str(length)))}.jpeg",
+                    ]
+                )
 
-        ffmpeg_output = output.decode()
-        ffmpeg_error = error.decode()
+            totalerrs = runn(commands, self.ffmpeg_threads)
 
-        if len(os.listdir(self.output_dir)) == 0:
+            if (filenum := len(os.listdir(self.output_dir))) != self.frame_count:
+                raise FFmpegFailedToExtractFrames(
+                    f"Wrong number of frames extracted by FFmpeg. \nExpected {self.frame_count} got {filenum} in {self.output_dir}."
+                )
 
+        else:
+            command = [
+                f"{ffmpeg_path}",
+                "-i",
+                f"{video_path}",
+                *crop,
+                "-s",
+                f"{self.frame_size}x{self.frame_size}",
+                "-r",
+                *str(self.interval),
+                output_dir + "video_frame_%07d.jpeg",
+            ]
+            totalerrs = runn([command], n=1)
+
+        if totalerrs:
             raise FFmpegFailedToExtractFrames(
-                f"FFmpeg could not extract any frames.\n{command}\n{ffmpeg_output}\n{ffmpeg_error}"
+                f"{totalerrs} errors while extracting {self.frame_count} frames using FFmpeg."
             )

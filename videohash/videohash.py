@@ -3,7 +3,7 @@ import random
 import re
 import shutil
 from pathlib import Path
-from math import ceil
+from math import ceil, sqrt
 from typing import List, Optional, Union
 
 import imagehash
@@ -34,7 +34,10 @@ class VideoHash:
         self,
         path: str,
         storage_path: Optional[str] = None,
+        frame_count: int = 36,
+        frame_size: int = 144,
         frame_interval: Union[int, float] = 1,
+        ffmpeg_threads: int = 18,
     ) -> None:
         """
         :param path: Absolute path of the input video file.
@@ -65,17 +68,27 @@ class VideoHash:
 
         self._storage_path = self.storage_path
         self.frame_interval = frame_interval
+        self.ffmpeg_threads = ffmpeg_threads
+        self.frame_count = frame_count
+        self.frame_size = frame_size
 
         self.task_uid = VideoHash._get_task_uid()
 
         self._create_required_dirs_and_check_for_errors()
 
         self.video_duration = video_duration(self.path)
+
+        self.fixed = int(self.video_duration * self.frame_interval) >= self.frame_count
+
         FramesExtractor(
             self.path,
             self.frames_dir,
             duration=self.video_duration,
             interval=self.frame_interval,
+            ffmpeg_threads=self.ffmpeg_threads,
+            frame_count=self.frame_count,
+            frame_size=self.frame_size,
+            fixed=self.fixed,
         )
 
         self.collage_path = os.path.join(self.collage_dir, "collage.jpg")
@@ -88,7 +101,9 @@ class VideoHash:
         MakeCollage(
             get_list_of_all_files_in_dir(self.frames_dir),
             self.collage_path,
-            collage_image_width=1024,
+            collage_image_width=round(sqrt(self.frame_count)) * self.frame_size,
+            frame_size=self.frame_size,
+            fixed=self.fixed,
         )
 
         make_tile(
