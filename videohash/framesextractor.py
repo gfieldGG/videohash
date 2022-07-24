@@ -227,14 +227,6 @@ class FramesExtractor:
 
             succ, outs = runn(commands, self.ffmpeg_threads)
 
-            if (
-                succ
-                and (filenum := len(os.listdir(self.output_dir))) != self.frame_count
-            ):
-                raise FFmpegFailedToExtractFrames(
-                    f"Wrong number of frames extracted by FFmpeg. \nExpected {self.frame_count} got {filenum} in {self.output_dir}."
-                )
-
         else:
             command = [
                 f"{ffmpeg_path}",
@@ -249,7 +241,15 @@ class FramesExtractor:
             ]
             succ, outs = runn([command], n=1)
 
+        filenum = len(os.listdir(self.output_dir))
+        if filenum >= self.frame_count:
+            return  # return even if we had errors cuz sometimes files be weird
+
         if not succ:
             raise FFmpegFailedToExtractFrames(
-                f"FFmpeg errors while extracting {self.frame_count} frames to {self.output_dir}:\n{outs[0]}"
+                f"FFmpeg errors while extracting frames to {self.output_dir}"
             )
+
+        raise FFmpegFailedToExtractFrames(
+            f"Wrong number of frames extracted by FFmpeg. \nExpected {self.frame_count} got {filenum} in {self.output_dir}."
+        )

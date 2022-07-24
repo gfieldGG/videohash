@@ -69,16 +69,18 @@ class VideoHash:
         self._storage_path = self.storage_path
         self.frame_interval = frame_interval
         self.ffmpeg_threads = ffmpeg_threads
-        self.frame_count = frame_count
+        self.video_duration = video_duration(self.path)
+
+        self.frame_count = min(
+            int(self.video_duration * self.frame_interval) + 2, frame_count
+        )
+        self.fixed = self.frame_count >= frame_count
+
         self.frame_size = frame_size
 
         self.task_uid = VideoHash._get_task_uid()
 
         self._create_required_dirs_and_check_for_errors()
-
-        self.video_duration = video_duration(self.path)
-
-        self.fixed = int(self.video_duration * self.frame_interval) >= self.frame_count
 
         FramesExtractor(
             self.path,
