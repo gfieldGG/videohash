@@ -124,8 +124,8 @@ class FramesExtractor:
     def detect_crop(
         video_path: str,
         duration: float,
+        ffmpeg_path: str,
         frames: int = 3,
-        ffmpeg_path: Optional[str] = None,
     ) -> list[str]:
         """
         Detects the the amount of cropping to remove black bars.
@@ -143,13 +143,26 @@ class FramesExtractor:
         length = 8  # amount of samples to test
         timestamps = [1 + x * (duration - 1) / length for x in range(length)]
 
-        commands = []
+        commands: list[list[str]] = []
         for ts in timestamps:
             commands.append(
-                f'"{ffmpeg_path}" -ss {ts} -i "{video_path}" -vframes {frames} -vf cropdetect -f null -'
+                [
+                    ffmpeg_path,
+                    "-ss",
+                    f"{ts}",
+                    "-i",
+                    video_path,
+                    "-vframes",
+                    f"{frames}",
+                    "-vf",
+                    "cropdetect",
+                    "-f",
+                    "null",
+                    "-",
+                ]
             )
 
-        succ, outs = runn(commands, n=length)
+        succ, outs = runn(commands, n=length, geterr=True)
 
         crop_list: list[str] = []
         for out in outs:

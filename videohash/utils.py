@@ -53,30 +53,37 @@ def create_and_return_temporary_directory() -> str:
     return path
 
 
-def runn(commands: list[list[str]] | list[str], n: int = 4) -> tuple[bool, list[str]]:
+def runn(
+    commands: list[list[str]] | list[str], n: int = 4, geterr=False, getout=False
+) -> tuple[bool, list[str]]:
     """
     Run list of commands in batches of `n`. Aborts on any non-zero exit code.
 
     https://stackoverflow.com/a/71743719/9356410
 
     :param commands: List of commands to run as either arglists or strings.
-    :param n: Number of commands to run in parallel per batch, defaults to 4. Has to be a multiple of `len(commands)`. TODO
+    :param n: Number of commands to run in parallel per batch, defaults to 4. HAS TO BE A MULTIPLE OF, LESS THAN OR EQUAL TO `len(commands)`.
     :return int: Count of non-zero returncodes.
     """
     outputs = []
     for j in range(max(int(len(commands) / n), 1)):
         procs = [
             subprocess.Popen(
-                i, shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE
+                i,
+                shell=False,
+                stdout=subprocess.PIPE if getout else None,
+                stderr=subprocess.PIPE if geterr else None,
+                text=True,
             )
             for i in commands[j * n : min((j + 1) * n, len(commands))]
         ]
         for p in procs:
             out, err = p.communicate()
 
+            if getout or geterr:
+                outputs.append(out or "" + err or "")
+
             if p.returncode:  # error
-                outputs.append(out.decode() + err.decode())
                 return False, outputs
-            outputs.append(out.decode() + err.decode())
 
     return True, outputs
