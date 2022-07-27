@@ -31,7 +31,6 @@ class FramesExtractor:
         frame_count: int,
         frame_size: int,
         ffmpeg_threads: int,
-        interval: Union[int, float],
         fixed: bool,
         ffmpeg_path: Optional[str] = None,
     ) -> None:
@@ -63,7 +62,6 @@ class FramesExtractor:
         self.frame_count = frame_count
         self.frame_size = frame_size
         self.ffmpeg_threads = ffmpeg_threads
-        self.interval = interval
         self.fixed = fixed
         self.ffmpeg_path = ""
         if ffmpeg_path:
@@ -236,13 +234,16 @@ class FramesExtractor:
                 "-s",
                 f"{self.frame_size}x{self.frame_size}",
                 "-r",
-                *str(self.interval),
+                f"{self.frame_count-1}/{self.duration}",
+                "-vframes",
+                f"{self.frame_count}",
                 output_dir + "video_frame_%07d.jpeg",
             ]
             succ, outs = runn([command], n=1)
 
         filenum = len(os.listdir(self.output_dir))
-        if filenum >= self.frame_count:  # frame_count is an estimate therefore >=
+
+        if filenum == self.frame_count:
             return  # return even if we had errors cuz sometimes files be weird
 
         if not succ:

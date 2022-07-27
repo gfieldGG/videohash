@@ -36,7 +36,6 @@ class VideoHash:
         storage_path: Optional[str] = None,
         frame_count: int = 36,
         frame_size: int = 144,
-        frame_interval: Union[int, float] = 1,
         ffmpeg_threads: int = 18,
     ) -> None:
         """
@@ -67,14 +66,12 @@ class VideoHash:
             self.storage_path = storage_path
 
         self._storage_path = self.storage_path
-        self.frame_interval = frame_interval
         self.ffmpeg_threads = ffmpeg_threads
         self.video_duration = video_duration(self.path)
 
-        self.frame_count = min(
-            int(self.video_duration * self.frame_interval) + 2, frame_count
-        )
-        self.fixed = self.frame_count >= frame_count
+        self.frame_count = frame_count
+
+        self.fixed = self.video_duration >= frame_count  # TODO consider bitrate/fps
 
         self.frame_size = frame_size
 
@@ -86,7 +83,6 @@ class VideoHash:
             self.path,
             self.frames_dir,
             duration=self.video_duration,
-            interval=self.frame_interval,
             ffmpeg_threads=self.ffmpeg_threads,
             frame_count=self.frame_count,
             frame_size=self.frame_size,
