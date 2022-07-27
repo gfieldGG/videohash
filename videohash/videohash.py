@@ -497,7 +497,7 @@ class VideoHash:
 
         self.dominant_color_bitlist: List = []
 
-        for row in imagehash.whash(self.image).hash.astype(int).tolist():
+        for row in imagehash.phash(self.image).hash.astype(int).tolist():
             self.whash_bitlist.extend(row)
 
         dominant_color_list = []
