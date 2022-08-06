@@ -138,7 +138,7 @@ class FramesExtractor:
         :rtype: str
         """
         # generate timestamps to test
-        length = 8  # amount of samples to test
+        length = 4  # amount of samples to test
         timestamps = [1 + x * (duration - 1) / length for x in range(length)]
 
         commands: list[list[str]] = []
