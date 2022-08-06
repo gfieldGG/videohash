@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "videohash"
-version = "4.1.1"
+version = "4.2.0"
 description = ""
 authors = ["Akash Mahanty <akamhy@yahoo.com>", "gfield <github@gfield.de>"]
 license = "MIT"

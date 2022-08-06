@@ -228,4 +228,4 @@ class VideoHash:
         bitlist: list[int] = (
             imagehash.phash(self.image).hash.flatten().astype(int).tolist()
         )
-        self.hash: str = "".join([str(i) for i in bitlist])
+        self.hash: str = "0b" + "".join([str(i) for i in bitlist])
