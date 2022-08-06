@@ -1,25 +1,19 @@
 import os
-import random
-import re
 import shutil
 from pathlib import Path
-from math import ceil, sqrt
-from typing import List, Optional, Union
+from subprocess import check_output
 
-import imagehash
-import numpy as np
-from imagedominantcolor import DominantColor
 from PIL import Image
+import imagehash
 
 from .collagemaker import MakeCollage
-from .exceptions import DidNotSupplyPathOrUrl, StoragePathDoesNotExist
-from .framesextractor import FramesExtractor
-from .tilemaker import make_tile
-from .utils import (
-    create_and_return_temporary_directory,
-    does_path_exists,
-    get_list_of_all_files_in_dir,
+from .exceptions import (
+    StoragePathDoesNotExist,
+    FFmpegError,
+    FFmpegNotFound,
 )
+from .framesextractor import FramesExtractor
+from .utils import get_tempdir, get_files_in_dir
 from .videoduration import video_duration
 
 
@@ -32,11 +26,12 @@ class VideoHash:
 
     def __init__(
         self,
-        path: str,
-        storage_path: Optional[str] = None,
+        video_path: Path | str,
+        storage_path: Path = None,
         frame_count: int = 16,
         frame_size: int = 240,
         ffmpeg_threads: int = 16,
+        ffmpeg_path: Path | str = "ffmpeg",
         fixed: bool = None,
     ) -> None:
         """
@@ -60,15 +55,23 @@ class VideoHash:
 
         :rtype: NoneType
         """
-        self.path = path
+        if not isinstance(video_path, Path):
+            video_path = Path(video_path)
+        self.video_path = video_path.resolve()
+        if not video_path.is_file():
+            raise FileNotFoundError(f"No video found at '{self.video_path}'")
 
-        self.storage_path = ""
-        if storage_path:
-            self.storage_path = storage_path
+        self._base_dir = storage_path
+        self._check_and_create_working_dirs()
 
-        self._storage_path = self.storage_path
+        if isinstance(ffmpeg_path, Path):
+            self.ffmpeg_path = ffmpeg_path.resolve().as_posix()
+        else:
+            self.ffmpeg_path = ffmpeg_path
+        self._check_ffmpeg()
+
         self.ffmpeg_threads = ffmpeg_threads
-        self.video_duration = video_duration(self.path)
+        self.video_duration = video_duration(self.video_path, self.ffmpeg_path)
 
         self.frame_count = frame_count
 
@@ -79,14 +82,11 @@ class VideoHash:
 
         self.frame_size = frame_size
 
-        self.task_uid = VideoHash._get_task_uid()
-
-        self._create_required_dirs_and_check_for_errors()
-
         FramesExtractor(
-            self.path,
+            self.video_path,
             self.frames_dir,
             duration=self.video_duration,
+            ffmpeg_path=self.ffmpeg_path,
             ffmpeg_threads=self.ffmpeg_threads,
             frame_count=self.frame_count,
             frame_size=frame_size,
@@ -96,11 +96,9 @@ class VideoHash:
         self.collage_path = os.path.join(self.collage_dir, "collage.jpg")
 
         MakeCollage(
-            get_list_of_all_files_in_dir(self.frames_dir),
-            self.collage_path,
-            collage_image_width=round(sqrt(self.frame_count)) * self.frame_size,
+            image_list=get_files_in_dir(self.frames_dir),
+            output_path=self.collage_path,
             frame_size=self.frame_size,
-            fixed=self.fixed,
         )
 
         self.image = Image.open(self.collage_path)
@@ -146,7 +144,23 @@ class VideoHash:
         """
         return len(self.hash)
 
-    def _create_required_dirs_and_check_for_errors(self) -> None:
+    def _check_ffmpeg(self) -> None:
+        """
+        Check the FFmpeg path and runs 'ffmpeg -version' to verify that FFmpeg is found and works.
+        """
+        try:
+            # check_output will raise FileNotFoundError if it does not find ffmpeg
+            output = check_output([self.ffmpeg_path, "-version"]).decode()
+        except FileNotFoundError:
+            raise FFmpegNotFound(f"FFmpeg not found at '{self.ffmpeg_path}'")
+
+        else:
+            if "ffmpeg version" not in output:
+                raise FFmpegError(
+                    f"Unexpected response for '{self.ffmpeg_path} -version':\n{output}"
+                )
+
+    def _check_and_create_working_dirs(self) -> None:
         """
         Creates important directories before the main processing starts.
 
@@ -161,24 +175,19 @@ class VideoHash:
 
         :rtype: NoneType
         """
-        if not self.storage_path:
-            self.storage_path = create_and_return_temporary_directory()
-        if not does_path_exists(self.storage_path):
-            raise StoragePathDoesNotExist(
-                f"Storage path '{self.storage_path}' does not exist."
-            )
+        if self._base_dir:
+            if not self._base_dir.is_dir():
+                raise StoragePathDoesNotExist(
+                    f"Storage base path '{self._base_dir}' does not exist."
+                )
+            self._base_dir = self._base_dir.resolve()
+        self.storage_path = get_tempdir(self._base_dir)
 
-        os_path_sep = os.path.sep
+        self.frames_dir = self.storage_path / "frames"
+        self.frames_dir.mkdir(parents=False, exist_ok=False)
 
-        self.storage_path = os.path.join(
-            self.storage_path, (f"{self.task_uid}{os_path_sep}")
-        )
-
-        self.frames_dir = os.path.join(self.storage_path, (f"frames{os_path_sep}"))
-        Path(self.frames_dir).mkdir(parents=True, exist_ok=True)
-
-        self.collage_dir = os.path.join(self.storage_path, (f"collage{os_path_sep}"))
-        Path(self.collage_dir).mkdir(parents=True, exist_ok=True)
+        self.collage_dir = self.storage_path / "collage"
+        self.collage_dir.mkdir(parents=False, exist_ok=False)
 
     def delete_storage_path(self) -> None:
         """
@@ -200,38 +209,7 @@ class VideoHash:
 
         :rtype: NoneType
         """
-        directory = self.storage_path
-
-        if not self._storage_path:
-            directory = (
-                os.path.dirname(os.path.dirname(os.path.dirname(self.storage_path)))
-                + os.path.sep
-            )
-
-        shutil.rmtree(directory, ignore_errors=True, onerror=None)
-
-    @staticmethod
-    def _get_task_uid() -> str:
-        """
-        Returns an unique task id for the instance. Task id is used to
-        differentiate the instance files from the other unrelated files.
-
-        We want to make sure that only the instance is manipulating the instance files
-        and no other process nor user by accident deletes or edits instance files while
-        we are still processing.
-
-        :return: instance's unique task id.
-
-        :rtype: str
-        """
-        sys_random = random.SystemRandom()
-
-        return "".join(
-            sys_random.choice(
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-            )
-            for _ in range(20)
-        )
+        shutil.rmtree(self.storage_path, ignore_errors=True, onerror=None)
 
     def _calc_hash(self) -> None:
         """
