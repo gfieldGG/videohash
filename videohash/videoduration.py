@@ -35,3 +35,48 @@ def video_duration(video_path: Path, ffmpeg_path: str = "ffmpeg") -> float:
     hours, minutes, seconds = duration_string.strip().split(":")
 
     return float(hours) * 60.00 * 60.00 + float(minutes) * 60.00 + float(seconds)
+
+
+def video_duration_ffprobe(video_path: str) -> float:
+    args = [
+        "ffprobe",
+        "-v",
+        "error",
+        "-select_streams",
+        "v:0",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+        "-i",
+        video_path,
+    ]
+
+    succ, outs = runn([args], 1, getout=True)
+
+    if succ:
+        return float(outs[0])
+
+    return 0.0
+
+
+def video_frames(video_path: str) -> int:
+    args = [
+        "ffprobe",
+        "-v",
+        "error",
+        "-select_streams",
+        "v:0",
+        "-show_entries",
+        "stream=nb_frames",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+        "-i",
+        video_path,
+    ]
+    succ, outs = runn([args], 1, getout=True)
+
+    if succ:
+        return int(outs[0])
+
+    return 0

@@ -4,8 +4,6 @@ from pathlib import Path
 
 import numpy as np
 
-from videohash.videoduration import video_duration_ffprobe
-
 from .exceptions import (
     FFmpegFailedToExtractFrames,
     FramesExtractorOutPutDirDoesNotExist,
