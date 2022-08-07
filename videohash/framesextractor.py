@@ -2,6 +2,8 @@ import os
 import re
 from pathlib import Path
 
+import numpy as np
+
 from .exceptions import (
     FFmpegFailedToExtractFrames,
     FramesExtractorOutPutDirDoesNotExist,
@@ -77,7 +79,7 @@ class FramesExtractor:
         """
         # generate timestamps to test
         length = 4  # amount of samples to test
-        timestamps = [1 + x * (self.duration - 1) / length for x in range(length)]
+        timestamps = np.linspace(0, self.duration - 0.1, length)
 
         commands: list[list[str]] = []
         for ts in timestamps:
@@ -112,6 +114,51 @@ class FramesExtractor:
 
         return []
 
+    def _extract_seek(self, crop: list[str]):
+        # generate timestamps to extract (-0.1 cuz FFmpeg baka)
+        timestamps = np.linspace(0, self.duration - 0.1, self.frame_count)
+
+        # build all commands
+        commands: list[list[str]] = []
+        for i, ts in enumerate(timestamps):
+            frame_path = (
+                self.output_dir
+                / f"frame_{f'{i}'.zfill(len(str(self.frame_count)))}.jpeg"
+            ).as_posix()
+            commands.append(
+                [
+                    f"{self.ffmpeg_path}",
+                    "-ss",
+                    f"{ts}",
+                    "-i",
+                    f"{self.video_path}",
+                    *crop,
+                    "-frames:v",
+                    "1",
+                    "-s",
+                    f"{self.frame_size}x{self.frame_size}",
+                    frame_path,
+                ]
+            )
+
+        return runn(commands, self.ffmpeg_threads)
+
+    def _extract_framerate(self, crop: list[str]):
+        command = [
+            f"{self.ffmpeg_path}",
+            "-i",
+            f"{self.video_path}",
+            *crop,
+            "-s",
+            f"{self.frame_size}x{self.frame_size}",
+            "-r",
+            f"{self.frame_count-2}/{self.duration}",
+            "-vframes",
+            f"{self.frame_count}",
+            (self.output_dir / "frame_%07d.jpeg").as_posix(),
+        ]
+        return runn([command], n=1)
+
     def extract(self) -> None:
         """
         Extract the frames at every n seconds where n is the
@@ -121,57 +168,13 @@ class FramesExtractor:
 
         :rtype: NoneType
         """
-
-        ffmpeg_path = self.ffmpeg_path
-        video_path = self.video_path
-        duration = self.duration
-        output_dir = self.output_dir
-
         crop = self.detect_crop(frames=3)
 
         if self.fixed:
-            # generate timestamps to extract
-            length = self.frame_count
-            timestamps = [0 + x * duration / length for x in range(length)]
-
-            commands: list[list[str]] = []
-            for i, ts in enumerate(timestamps):
-                frame_path = (
-                    output_dir / f"frame_{f'{i}'.zfill(len(str(length)))}.jpeg"
-                ).as_posix()
-                commands.append(
-                    [
-                        f"{ffmpeg_path}",
-                        "-ss",
-                        f"{ts}",
-                        "-i",
-                        f"{video_path}",
-                        *crop,
-                        "-frames:v",
-                        "1",
-                        "-s",
-                        f"{self.frame_size}x{self.frame_size}",
-                        frame_path,
-                    ]
-                )
-
-            succ, outs = runn(commands, self.ffmpeg_threads)
+            succ, outs = self._extract_seek(crop)
 
         else:
-            command = [
-                f"{ffmpeg_path}",
-                "-i",
-                f"{video_path}",
-                *crop,
-                "-s",
-                f"{self.frame_size}x{self.frame_size}",
-                "-r",
-                f"{self.frame_count-1}/{self.duration}",
-                "-vframes",
-                f"{self.frame_count}",
-                (output_dir / "frame_%07d.jpeg").as_posix(),
-            ]
-            succ, outs = runn([command], n=1)
+            succ, outs = self._extract_framerate(crop)
 
         filenum = len(os.listdir(self.output_dir))
 
