@@ -6,13 +6,13 @@ from subprocess import check_output
 from PIL import Image
 import imagehash
 
-from .collagemaker import MakeCollage
+from .collagemaker import MakeCollage, make_collage
 from .exceptions import (
     StoragePathDoesNotExist,
     FFmpegError,
     FFmpegNotFound,
 )
-from .framesextractor import FramesExtractor
+from .framesextractor import FramesExtractor, extract_frames, extract_frames_seek
 from .utils import get_tempdir, get_files_in_dir
 from .videoduration import video_duration
 
@@ -30,6 +30,7 @@ class VideoHash:
         storage_path: Path = None,
         frame_count: int = 16,
         frame_size: int = 240,
+        decord=False,
         ffmpeg_threads: int = 16,
         ffmpeg_path: Path | str = "ffmpeg",
         fixed: bool = None,
@@ -70,6 +71,14 @@ class VideoHash:
             self.ffmpeg_path = ffmpeg_path
         self._check_ffmpeg()
 
+        if decord:
+            frames = extract_frames(
+                self.video_path, frame_count=frame_count, frame_size=frame_size
+            )
+            collage = make_collage(frames, frame_size)
+            self.hash = _calc_hash(collage)
+            return
+
         self.ffmpeg_threads = ffmpeg_threads
         self.video_duration = video_duration(self.video_path, self.ffmpeg_path)
 
@@ -104,7 +113,7 @@ class VideoHash:
         self.image = Image.open(self.collage_path)
         self.hashlength = 64
 
-        self._calc_hash()
+        self.hash = _calc_hash(self.image)
 
     def __str__(self) -> str:
         """
@@ -211,21 +220,20 @@ class VideoHash:
         """
         shutil.rmtree(self.storage_path, ignore_errors=True, onerror=None)
 
-    def _calc_hash(self) -> None:
-        """
-        Calculates the hash value by calling the whash(wavelet hash) method of
-        imagehash package. The wavelet hash of the collage is the videohash for
-        the original input video.
 
-        End-user is not provided any access to the imagehash instance but
-        instead the binary and hexadecimal equivalent of the result of
-        wavelet-hash.
+def _calc_hash(image: Image.Image) -> str:
+    """
+    Calculates the hash value by calling the whash(wavelet hash) method of
+    imagehash package. The wavelet hash of the collage is the videohash for
+    the original input video.
 
-        :return: None
+    End-user is not provided any access to the imagehash instance but
+    instead the binary and hexadecimal equivalent of the result of
+    wavelet-hash.
 
-        :rtype: NoneType
-        """
-        bitlist: list[int] = (
-            imagehash.phash(self.image).hash.flatten().astype(int).tolist()
-        )
-        self.hash: str = "0b" + "".join([str(i) for i in bitlist])
+    :return: None
+
+    :rtype: NoneType
+    """
+    phash = imagehash.phash(image, hash_size=8).hash.flatten()
+    return "0b" + "".join(phash.astype(int).astype(str))

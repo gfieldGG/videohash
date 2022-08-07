@@ -1,6 +1,7 @@
 from math import sqrt
 from pathlib import Path
 from typing import Collection
+import numpy as np
 
 from PIL import Image
 
@@ -125,3 +126,40 @@ class MakeCollage:
         # save the base image with all the frame images embedded on it
         collage_image.save(self.output_path)
         collage_image.close()
+
+
+def make_collage(frames: Collection[np.ndarray], frame_size: int) -> Image.Image:
+    """
+    Build square collage from array of frame arrays.
+
+    :param frames: Array of PIL readable arrays. Length must be a perfect square.
+    :param frame_size: Side length of each square frame.
+    :return: Square collage Image of size `frame_size * sqrt(len(frames))`
+    """
+    frame_count = len(frames)
+    if not sqrt(frame_count).is_integer():
+        raise ValueError(
+            f"Number of frames must be a perfect square for collage generation. '{frame_count}' seems wrong."
+        )
+    row_count = round(sqrt(frame_count))
+    collage_size = row_count * frame_size
+
+    # black base image of collage_size x collage_size
+    collage_image = Image.new("RGB", (collage_size, collage_size))
+
+    # iterate and paste frames onto collage base
+    y = -frame_size
+    x = 0
+    for count, frame in enumerate(frames):
+        # reset x at beginning of row and move down
+        if not count % row_count:
+            x = 0
+            y += frame_size
+
+        fi = Image.fromarray(frame)
+        collage_image.paste(fi, (x, y))
+        fi.close()
+
+        x += frame_size
+
+    return collage_image

@@ -1,6 +1,11 @@
 import os
 import re
 from pathlib import Path
+from typing import Collection
+
+import numpy as np
+from decord import VideoReader
+from decord import cpu, gpu
 
 from .exceptions import (
     FFmpegFailedToExtractFrames,
@@ -127,7 +132,8 @@ class FramesExtractor:
         duration = self.duration
         output_dir = self.output_dir
 
-        crop = self.detect_crop(frames=3)
+        # crop = self.detect_crop(frames=3)
+        crop: list[str] = []  # TODO
 
         if self.fixed:
             # generate timestamps to extract
@@ -186,3 +192,47 @@ class FramesExtractor:
         raise FFmpegFailedToExtractFrames(
             f"Wrong number of frames extracted by FFmpeg. \nExpected {self.frame_count} got {filenum} in {self.output_dir}."
         )
+
+
+def extract_frames(
+    video_file: Path, frame_count: int, frame_size: int
+) -> np.ndarray:
+    """
+    Extract a number of evenly spaced frames from `video_file`.
+
+    :param video_file: Video file to extract frames from.
+    :param frame_count: Number of frames to extract.
+    :param frame_size: Side length of resulting square frames.
+    :return: Array of square Image arrays.
+    """
+    vr = VideoReader(video_file.as_posix(), height=frame_size, width=frame_size)
+
+    # generate evenly spaced indices
+    indices = np.linspace(0, len(vr) - 1, frame_count, dtype=np.uint64)
+
+    frames: np.ndarray = vr.get_batch(indices).asnumpy()
+    return frames
+
+
+def extract_frames_seek(
+    video_file: Path, frame_count: int, frame_size: int
+) -> Collection[np.ndarray]:
+    """
+    Extract a number of evenly spaced frames from `video_file`.
+
+    :param video_file: Video file to extract frames from.
+    :param frame_count: Number of frames to extract.
+    :param frame_size: Side length of resulting square frames.
+    :return: Array of square Image arrays.
+    """
+    vr = VideoReader(video_file.as_posix(), height=frame_size, width=frame_size)
+
+    frames = []
+    # generate evenly spaced indices
+    indices = np.linspace(0, len(vr) - 1, frame_count, dtype=np.uint64)
+    for i in indices:
+        vr.seek(i)
+        frames.append(vr.next().asnumpy())
+
+    # frames: np.ndarray = vr.get_batch(indices).asnumpy()
+    return frames
