@@ -1,6 +1,7 @@
 import os
 import re
 from pathlib import Path
+from typing import Collection
 
 import numpy as np
 
@@ -9,6 +10,7 @@ from .exceptions import (
     FramesExtractorOutPutDirDoesNotExist,
 )
 from .utils import runn
+from .videoduration import video_duration
 
 
 class FramesExtractor:
@@ -21,11 +23,9 @@ class FramesExtractor:
         self,
         video_path: Path,
         output_dir: Path,
-        duration: float,
         frame_count: int,
         frame_size: int,
         ffmpeg_threads: int,
-        fixed: bool,
         ffmpeg_path: str,
     ) -> None:
         """
@@ -52,12 +52,10 @@ class FramesExtractor:
         """
         self.video_path = video_path
         self.output_dir = output_dir
-        self.duration = duration
         self.frame_count = frame_count
         self.frame_size = frame_size
         self.ffmpeg_path = ffmpeg_path
         self.ffmpeg_threads = ffmpeg_threads
-        self.fixed = fixed
 
         if not self.output_dir.is_dir():
             raise FramesExtractorOutPutDirDoesNotExist(
@@ -79,7 +77,7 @@ class FramesExtractor:
         """
         # generate timestamps to test
         length = 4  # amount of samples to test
-        timestamps = np.linspace(0, self.duration - 0.3, length)
+        timestamps = get_timestamps(self.video_path, length)
 
         commands: list[list[str]] = []
         for ts in timestamps:
@@ -114,9 +112,19 @@ class FramesExtractor:
 
         return []
 
-    def _extract_seek(self, crop: list[str]):
-        # generate timestamps to extract (-0.3 cuz FFmpeg baka)
-        timestamps = np.linspace(0, self.duration - 0.3, self.frame_count)
+    def extract(self) -> None:
+        """
+        Extract the frames at every n seconds where n is the
+        integer set to self.interval.
+
+        :return: None
+
+        :rtype: NoneType
+        """
+        crop = self.detect_crop(frames=3)
+
+        # timestamps to extract
+        timestamps = get_timestamps(self.video_path, self.frame_count)
 
         # build all commands
         commands: list[list[str]] = []
@@ -141,40 +149,7 @@ class FramesExtractor:
                 ]
             )
 
-        return runn(commands, self.ffmpeg_threads)
-
-    def _extract_framerate(self, crop: list[str]):
-        command = [
-            f"{self.ffmpeg_path}",
-            "-i",
-            f"{self.video_path}",
-            *crop,
-            "-s",
-            f"{self.frame_size}x{self.frame_size}",
-            "-r",
-            f"{self.frame_count-2}/{self.duration}",
-            "-vframes",
-            f"{self.frame_count}",
-            (self.output_dir / "frame_%07d.jpeg").as_posix(),
-        ]
-        return runn([command], n=1)
-
-    def extract(self) -> None:
-        """
-        Extract the frames at every n seconds where n is the
-        integer set to self.interval.
-
-        :return: None
-
-        :rtype: NoneType
-        """
-        crop = self.detect_crop(frames=3)
-
-        if self.fixed:
-            succ, outs = self._extract_seek(crop)
-
-        else:
-            succ, outs = self._extract_framerate(crop)
+        succ, outs = runn(commands, self.ffmpeg_threads)
 
         filenum = len(os.listdir(self.output_dir))
 
@@ -189,3 +164,12 @@ class FramesExtractor:
         raise FFmpegFailedToExtractFrames(
             f"Wrong number of frames extracted by FFmpeg. \nExpected {self.frame_count} got {filenum} in {self.output_dir}."
         )
+
+
+def get_timestamps(video_file: Path, n: int) -> Collection[float]:
+    """Get list of evenly spaced timestamps in `video_file`."""
+    dur = video_duration(video_file)
+
+    # ignore endpoint cuz ffmpeg dumb af
+    timestamps = np.linspace(0, dur, n, endpoint=False)
+    return timestamps
