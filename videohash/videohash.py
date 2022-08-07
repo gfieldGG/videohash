@@ -14,7 +14,6 @@ from .exceptions import (
 )
 from .framesextractor import FramesExtractor
 from .utils import get_tempdir, get_files_in_dir
-from .videoduration import video_duration
 
 
 class VideoHash:
@@ -32,7 +31,6 @@ class VideoHash:
         frame_size: int = 240,
         ffmpeg_threads: int = 16,
         ffmpeg_path: Path | str = "ffmpeg",
-        fixed: bool = None,
     ) -> None:
         """
         :param path: Absolute path of the input video file.
@@ -71,26 +69,17 @@ class VideoHash:
         self._check_ffmpeg()
 
         self.ffmpeg_threads = ffmpeg_threads
-        self.video_duration = video_duration(self.video_path, self.ffmpeg_path)
 
         self.frame_count = frame_count
-
-        if fixed is None:
-            self.fixed = self.video_duration >= 36  # TODO consider bitrate/fps
-        else:
-            self.fixed = fixed
-
         self.frame_size = frame_size
 
         FramesExtractor(
             self.video_path,
             self.frames_dir,
-            duration=self.video_duration,
             ffmpeg_path=self.ffmpeg_path,
             ffmpeg_threads=self.ffmpeg_threads,
             frame_count=self.frame_count,
             frame_size=frame_size,
-            fixed=self.fixed,
         )
 
         self.collage_path = os.path.join(self.collage_dir, "collage.jpg")
