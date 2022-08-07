@@ -10,7 +10,6 @@ from .exceptions import (
     FramesExtractorOutPutDirDoesNotExist,
 )
 from .utils import runn
-from .videoduration import video_duration
 
 
 class FramesExtractor:
@@ -23,6 +22,7 @@ class FramesExtractor:
         self,
         video_path: Path,
         output_dir: Path,
+        duration: float,
         frame_count: int,
         frame_size: int,
         ffmpeg_threads: int,
@@ -52,6 +52,7 @@ class FramesExtractor:
         """
         self.video_path = video_path
         self.output_dir = output_dir
+        self.duration = duration
         self.frame_count = frame_count
         self.frame_size = frame_size
         self.ffmpeg_path = ffmpeg_path
@@ -77,7 +78,7 @@ class FramesExtractor:
         """
         # generate timestamps to test
         length = 4  # amount of samples to test
-        timestamps = get_timestamps(self.video_path, length)
+        timestamps = _get_timestamps(self.duration, length)
 
         commands: list[list[str]] = []
         for ts in timestamps:
@@ -124,7 +125,7 @@ class FramesExtractor:
         crop = self.detect_crop(frames=3)
 
         # timestamps to extract
-        timestamps = get_timestamps(self.video_path, self.frame_count)
+        timestamps = _get_timestamps(self.duration, self.frame_count)
 
         # build all commands
         commands: list[list[str]] = []
@@ -166,10 +167,9 @@ class FramesExtractor:
         )
 
 
-def get_timestamps(video_file: Path, n: int) -> Collection[float]:
-    """Get list of evenly spaced timestamps in `video_file`."""
-    dur = video_duration(video_file)
+def _get_timestamps(duration: float, n: int) -> Collection[float]:
+    """Get list of `n` evenly spaced timestamps in `duration`."""
 
     # ignore endpoint cuz ffmpeg dumb af
-    timestamps = np.linspace(0, dur, n, endpoint=False)
+    timestamps = np.linspace(0, duration, n, endpoint=False)
     return timestamps

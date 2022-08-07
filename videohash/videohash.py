@@ -14,6 +14,7 @@ from .exceptions import (
 )
 from .framesextractor import FramesExtractor
 from .utils import get_tempdir, get_files_in_dir
+from .videoduration import video_duration
 
 
 class VideoHash:
@@ -59,6 +60,8 @@ class VideoHash:
         if not video_path.is_file():
             raise FileNotFoundError(f"No video found at '{self.video_path}'")
 
+        self.duration = video_duration(self.video_path)
+
         self._base_dir = storage_path
         self._check_and_create_working_dirs()
 
@@ -76,6 +79,7 @@ class VideoHash:
         FramesExtractor(
             self.video_path,
             self.frames_dir,
+            duration=self.duration,
             ffmpeg_path=self.ffmpeg_path,
             ffmpeg_threads=self.ffmpeg_threads,
             frame_count=self.frame_count,
