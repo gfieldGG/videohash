@@ -1,25 +1,19 @@
 import os
-import random
-import re
 import shutil
 from pathlib import Path
-from math import ceil
-from typing import List, Optional, Union
+from subprocess import check_output
 
-import imagehash
-import numpy as np
-from imagedominantcolor import DominantColor
 from PIL import Image
+import imagehash
 
 from .collagemaker import MakeCollage
-from .exceptions import DidNotSupplyPathOrUrl, StoragePathDoesNotExist
-from .framesextractor import FramesExtractor
-from .tilemaker import make_tile
-from .utils import (
-    create_and_return_temporary_directory,
-    does_path_exists,
-    get_list_of_all_files_in_dir,
+from .exceptions import (
+    StoragePathDoesNotExist,
+    FFmpegError,
+    FFmpegNotFound,
 )
+from .framesextractor import FramesExtractor
+from .utils import get_tempdir, get_files_in_dir
 from .videoduration import video_duration
 
 
@@ -32,9 +26,13 @@ class VideoHash:
 
     def __init__(
         self,
-        path: str,
-        storage_path: Optional[str] = None,
-        frame_interval: Union[int, float] = 1,
+        video_path: Path | str,
+        storage_path: Path = None,
+        frame_count: int = 16,
+        frame_size: int = 240,
+        ffmpeg_threads: int = 16,
+        ffmpeg_path: Path | str = "ffmpeg",
+        fixed: bool = None,
     ) -> None:
         """
         :param path: Absolute path of the input video file.
@@ -57,49 +55,54 @@ class VideoHash:
 
         :rtype: NoneType
         """
-        self.path = path
+        if not isinstance(video_path, Path):
+            video_path = Path(video_path)
+        self.video_path = video_path.resolve()
+        if not video_path.is_file():
+            raise FileNotFoundError(f"No video found at '{self.video_path}'")
 
-        self.storage_path = ""
-        if storage_path:
-            self.storage_path = storage_path
+        self._base_dir = storage_path
+        self._check_and_create_working_dirs()
 
-        self._storage_path = self.storage_path
-        self.frame_interval = frame_interval
+        if isinstance(ffmpeg_path, Path):
+            self.ffmpeg_path = ffmpeg_path.resolve().as_posix()
+        else:
+            self.ffmpeg_path = ffmpeg_path
+        self._check_ffmpeg()
 
-        self.task_uid = VideoHash._get_task_uid()
+        self.ffmpeg_threads = ffmpeg_threads
+        self.video_duration = video_duration(self.video_path, self.ffmpeg_path)
 
-        self._create_required_dirs_and_check_for_errors()
+        self.frame_count = frame_count
 
-        self.video_duration = video_duration(self.path)
+        if fixed is None:
+            self.fixed = self.video_duration >= 36  # TODO consider bitrate/fps
+        else:
+            self.fixed = fixed
+
+        self.frame_size = frame_size
+
         FramesExtractor(
-            self.path,
+            self.video_path,
             self.frames_dir,
             duration=self.video_duration,
-            interval=self.frame_interval,
+            ffmpeg_path=self.ffmpeg_path,
+            ffmpeg_threads=self.ffmpeg_threads,
+            frame_count=self.frame_count,
+            frame_size=frame_size,
+            fixed=self.fixed,
         )
 
         self.collage_path = os.path.join(self.collage_dir, "collage.jpg")
 
-        self.horizontally_concatenated_image_path = os.path.join(
-            self.horizontally_concatenated_image_dir,
-            "horizontally_concatenated_image.png",
-        )
-
         MakeCollage(
-            get_list_of_all_files_in_dir(self.frames_dir),
-            self.collage_path,
-            collage_image_width=1024,
-        )
-
-        make_tile(
-            self.frames_dir,
-            self.horizontally_concatenated_image_path,
-            self.tiles_dir,
+            image_list=get_files_in_dir(self.frames_dir),
+            output_path=self.collage_path,
+            frame_size=self.frame_size,
         )
 
         self.image = Image.open(self.collage_path)
-        self.bits_in_hash = 64
-        self.similar_percentage = 15
+        self.hashlength = 64
 
         self._calc_hash()
 
@@ -126,8 +129,8 @@ class VideoHash:
         """
 
         return (
-            f"VideoHash(hash={self.hash}, hash_hex={self.hash_hex}, "
-            + f"collage_path={self.collage_path}, bits_in_hash={self.bits_in_hash})"
+            f"VideoHash(hash={self.hash}, "
+            + f"collage_path={self.collage_path}, hashlength={self.hashlength})"
         )
 
     def __len__(self) -> int:
@@ -141,116 +144,23 @@ class VideoHash:
         """
         return len(self.hash)
 
-    def __ne__(self, other: object) -> bool:
+    def _check_ffmpeg(self) -> None:
         """
-        Definition of the "!=" operator for the VideoHash objects.
-
-        Instance of the VideoHash class, lists(bitlist) and string prefixed with
-         '0x' and '0b' are accepted other types.
-
-
-        If the hamming distance of this instance and the other instance
-        is zero returns False else returns True.
-
-        :return: True if other object and instance do not have the same hash
-                 value else False.
-
-        :rtype: bool
+        Check the FFmpeg path and runs 'ffmpeg -version' to verify that FFmpeg is found and works.
         """
+        try:
+            # check_output will raise FileNotFoundError if it does not find ffmpeg
+            output = check_output([self.ffmpeg_path, "-version"]).decode()
+        except FileNotFoundError:
+            raise FFmpegNotFound(f"FFmpeg not found at '{self.ffmpeg_path}'")
 
-        if self == other:
-            return False
-        return True
-
-    def __eq__(self, other: object) -> bool:
-        """
-        Definition of the '=' operator on VideoHash objects.
-
-        Instance of the VideoHash class, lists(bitlist) and string prefixed with
-         '0x' and '0b' are accepted other types.
-
-        :return: True if other object and instance have the same hash
-                 value else False.
-
-        :rtype: bool
-        """
-
-        if self - other == 0:
-            return True
-        return False
-
-    def __sub__(self, other: object) -> int:
-        """
-        Definition of the '-' operator on VideoHash objects.
-
-        Instance of the VideoHash class, lists(bitlist) and string prefixed with
-         '0x' and '0b' are accepted other types.
-
-        The method checks that the binary strings are prefixed with '0b',
-        hexadecimal strings prefixed with '0x' and if the string is not
-        prefixed then raise ValueError.
-
-        :return: The hamming distance of hash values of the instance and other
-                 object.
-
-        :rtype: int
-
-        :raises TypeError: If the object passed is not an instance of string, list
-        or VideoHash.
-
-        :raises ValueError: If the length of the hash values/bitlist of the
-                            instance and the other object are not equal.
-
-        :raises TypeError: If the hash values are python string objects but do
-                           not have '0x' or '0b' as prefix.
-        """
-        if other is None:
-            raise TypeError("Other hash is None. And it should not be None.")
-
-        if isinstance(other, str):
-
-            if other.lower().startswith("0x"):
-
-                return self.hamming_distance(
-                    string_a=self.hash,
-                    string_b=VideoHash.hex2bin(other.lower(), self.bits_in_hash),
+        else:
+            if "ffmpeg version" not in output:
+                raise FFmpegError(
+                    f"Unexpected response for '{self.ffmpeg_path} -version':\n{output}"
                 )
 
-            elif other.lower().startswith("0b"):
-
-                if len(other) != len(self.hash):
-                    raise ValueError(
-                        "Can not compare different bits hashes. You must supply a %d bits hash."
-                        % self.bits_in_hash
-                    )
-                return self.hamming_distance(string_a=self.hash, string_b=other.lower())
-
-            else:
-
-                raise TypeError(
-                    "Hash string must start with either '0x' for hexadecimal or '0b' for binary."
-                )
-
-        if isinstance(other, list):
-
-            if len(other) != self.bits_in_hash:
-                raise ValueError(
-                    f"The list does not have {self.bits_in_hash} bits. Can not calculate hamming distance."
-                )
-
-            return self.hamming_distance(bitlist_a=self.bitlist, bitlist_b=other)
-
-        if isinstance(other, VideoHash):
-            return self.hamming_distance(
-                bitlist_a=self.bitlist, bitlist_b=other.bitlist
-            )
-
-        raise TypeError(
-            "To calculate difference both of the hashes must be either "
-            + "hexadecimal/binary strings or instance of VideoHash class."
-        )
-
-    def _create_required_dirs_and_check_for_errors(self) -> None:
+    def _check_and_create_working_dirs(self) -> None:
         """
         Creates important directories before the main processing starts.
 
@@ -265,55 +175,19 @@ class VideoHash:
 
         :rtype: NoneType
         """
-        if not self.storage_path:
-            self.storage_path = create_and_return_temporary_directory()
-        if not does_path_exists(self.storage_path):
-            raise StoragePathDoesNotExist(
-                f"Storage path '{self.storage_path}' does not exist."
-            )
+        if self._base_dir:
+            if not self._base_dir.is_dir():
+                raise StoragePathDoesNotExist(
+                    f"Storage base path '{self._base_dir}' does not exist."
+                )
+            self._base_dir = self._base_dir.resolve()
+        self.storage_path = get_tempdir(self._base_dir)
 
-        os_path_sep = os.path.sep
+        self.frames_dir = self.storage_path / "frames"
+        self.frames_dir.mkdir(parents=False, exist_ok=False)
 
-        self.storage_path = os.path.join(
-            self.storage_path, (f"{self.task_uid}{os_path_sep}")
-        )
-
-        self.frames_dir = os.path.join(self.storage_path, (f"frames{os_path_sep}"))
-        Path(self.frames_dir).mkdir(parents=True, exist_ok=True)
-
-        self.tiles_dir = os.path.join(self.storage_path, (f"tiles{os_path_sep}"))
-        Path(self.tiles_dir).mkdir(parents=True, exist_ok=True)
-
-        self.collage_dir = os.path.join(self.storage_path, (f"collage{os_path_sep}"))
-        Path(self.collage_dir).mkdir(parents=True, exist_ok=True)
-
-        self.horizontally_concatenated_image_dir = os.path.join(
-            self.storage_path, (f"horizontally_concatenated_image{os_path_sep}")
-        )
-        Path(self.horizontally_concatenated_image_dir).mkdir(
-            parents=True, exist_ok=True
-        )
-
-    def is_similar(self, other: object) -> bool:
-        """
-        If 'similar_percentage' of bits are similar
-        the similar else not.
-        """
-        if self - other <= ceil((self.similar_percentage / 100) * self.bits_in_hash):
-            return True
-        else:
-            return False
-
-    def is_different(self, other: object) -> bool:
-        """
-        Refer to the is_similar,
-        if not similar then different.
-        """
-
-        if not self.is_similar(other):
-            return True
-        else:
-            return False
+        self.collage_dir = self.storage_path / "collage"
+        self.collage_dir.mkdir(parents=False, exist_ok=False)
 
     def delete_storage_path(self) -> None:
         """
@@ -335,133 +209,7 @@ class VideoHash:
 
         :rtype: NoneType
         """
-        directory = self.storage_path
-
-        if not self._storage_path:
-            directory = (
-                os.path.dirname(os.path.dirname(os.path.dirname(self.storage_path)))
-                + os.path.sep
-            )
-
-        shutil.rmtree(directory, ignore_errors=True, onerror=None)
-
-    @staticmethod
-    def _get_task_uid() -> str:
-        """
-        Returns an unique task id for the instance. Task id is used to
-        differentiate the instance files from the other unrelated files.
-
-        We want to make sure that only the instance is manipulating the instance files
-        and no other process nor user by accident deletes or edits instance files while
-        we are still processing.
-
-        :return: instance's unique task id.
-
-        :rtype: str
-        """
-        sys_random = random.SystemRandom()
-
-        return "".join(
-            sys_random.choice(
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-            )
-            for _ in range(20)
-        )
-
-    def hamming_distance(
-        self,
-        string_a: Optional[str] = None,
-        string_b: Optional[str] = None,
-        bitlist_a: Optional[List[int]] = None,
-        bitlist_b: Optional[List[int]] = None,
-    ) -> int:
-        """
-        Computes the hamming distance of the input bitstrings or bitlists.
-        string_a and string_b must be bitstrings.
-        bitlist_a and bitlist_b must be python strings containing only the
-        bits and not the prefix "0b".
-
-        :return: Hamming distance of the input bitstrings or bitlists.
-
-        :rtype: int
-
-        :raises ValueError: The input strings are of unequal length or bitlists
-                            have different number of bits. Hamming distance is
-                            not defined for unequal length strings.
-        """
-        if bitlist_a and bitlist_b:
-
-            if len(bitlist_a) != len(bitlist_b):
-                raise ValueError(
-                    "Bit lists have unequal number of bits."
-                    + " Can not compute hamming distance. Hamming distance is undefined."
-                )
-
-            _bitlist_a = bitlist_a
-            _bitlist_b = bitlist_b
-
-        if string_a and string_b:
-
-            if len(string_a) != len(string_b):
-                raise ValueError(
-                    "Strings are of unequal length. Can not compute hamming distance. Hamming distance is undefined."
-                )
-
-            if string_a == self.hash:
-                _bitlist_a = self.bitlist
-
-            else:
-                _bitlist_a = list(map(int, string_a.replace("0b", "")))
-
-            if string_b == self.hash:
-                _bitlist_b = self.bitlist
-
-            else:
-                _bitlist_b = list(map(int, string_b.replace("0b", "")))
-
-        return len(
-            np.bitwise_xor(
-                _bitlist_a,
-                _bitlist_b,
-            ).nonzero()[0]
-        )
-
-    @staticmethod
-    def hex2bin(hexstr: str, padding: int) -> str:
-        """
-        Convert hexadecimal('0x' prefixed) to bitstring string prefixed
-        with '0b'.
-
-        :return: Padded binary representation(bitstring) of the hexadecimal
-                 input.
-
-        :rtype: str
-
-        :raises ValueError: If input hexadecimal string is not prefixed
-                            with '0x'.
-        """
-        if not hexstr.lower().startswith("0x"):
-            raise ValueError("Input hexadecimal string must have '0x' as the prefix.")
-
-        return "0b" + str(bin(int(hexstr.lower(), 0))).replace("0b", "").zfill(padding)
-
-    @staticmethod
-    def bin2hex(binstr: str) -> str:
-        """
-        Convert bitstring('0b' prefixed) to hexadecimal string prefixed
-        with '0x'.
-
-        :return: Hex representation of the input bitstring.
-
-        :rtype: str
-
-        :raises ValueError: It input binary string is not prefixed with '0b'.
-        """
-
-        if not binstr.lower().startswith("0b"):
-            raise ValueError("Binary string must be prefixed with '0b'.")
-
-        return str(hex(int(binstr, 2)))
+        shutil.rmtree(self.storage_path, ignore_errors=True, onerror=None)
 
     def _calc_hash(self) -> None:
         """
@@ -477,115 +225,7 @@ class VideoHash:
 
         :rtype: NoneType
         """
-
-        self.bitlist: List = []
-
-        self.whash_bitlist: List = []
-
-        self.dominant_color_bitlist: List = []
-
-        for row in imagehash.whash(self.image).hash.astype(int).tolist():
-            self.whash_bitlist.extend(row)
-
-        dominant_color_list = []
-        for file_path in get_list_of_all_files_in_dir(self.tiles_dir):
-            dominantcolor = DominantColor(file_path)
-            dominant_color_list.append(dominantcolor.dominant_color)
-
-        pixels = [
-            "r",
-            "r",
-            "r",
-            "r",
-            "r",
-            "r",
-            "r",
-            "r",
-            "r",
-            "r",
-            "r",
-            "r",
-            "r",
-            "r",
-            "r",
-            "r",
-            "g",
-            "g",
-            "g",
-            "g",
-            "g",
-            "g",
-            "g",
-            "g",
-            "g",
-            "g",
-            "g",
-            "g",
-            "g",
-            "g",
-            "g",
-            "g",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "l",
-            "l",
-            "l",
-            "l",
-            "l",
-            "l",
-            "l",
-            "l",
-            "l",
-            "l",
-            "l",
-            "l",
-            "l",
-            "l",
-            "l",
-            "l",
-        ]
-
-        for i in range(64):
-            bit = 0
-            if pixels[i] == dominant_color_list[i]:
-                bit = 1
-
-            self.dominant_color_bitlist.append(bit)
-
-        for i in range(64):
-            x = self.dominant_color_bitlist[i]
-            y = self.whash_bitlist[i]
-
-            if x == y and x == 1:
-                self.bitlist.append(0)
-            elif x == y and x == 0:
-                self.bitlist.append(0)
-            else:
-                self.bitlist.append(1)
-
-        self.hash: str = ""
-
-        for bit in self.bitlist:
-
-            if bit:
-                self.hash += "1"
-            else:
-                self.hash += "0"
-
-        # the binary value is prefixed with 0b.
-        self.hash = f"0b{self.hash}"
-        self.hash_hex: str = VideoHash.bin2hex(self.hash)
+        bitlist: list[int] = (
+            imagehash.phash(self.image).hash.flatten().astype(int).tolist()
+        )
+        self.hash: str = "0b" + "".join([str(i) for i in bitlist])

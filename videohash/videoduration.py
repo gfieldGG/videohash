@@ -1,15 +1,13 @@
 import re
 from shutil import which
-from subprocess import PIPE, Popen
-from typing import Optional
+from pathlib import Path
 
-# Module to determine the length of video.
-# The length is found by the FFmpeg, the output of video_duration is in seconds.
+from .utils import runn
 
 
-def video_duration(video_path: str, ffmpeg_path: Optional[str] = None) -> float:
+def video_duration(video_path: Path, ffmpeg_path: str = "ffmpeg") -> float:
     """
-    Retrieve the exact video duration as echoed by the FFmpeg and return
+    Retrieve the exact video duration as echoed by FFmpeg and return
     the duration in seconds. Maximum duration supported is 999 hours, above
     which the regex is doomed to fail(no match).
 
@@ -21,17 +19,12 @@ def video_duration(video_path: str, ffmpeg_path: Optional[str] = None) -> float:
 
     :rtype: float
     """
-
-    if not ffmpeg_path:
-        ffmpeg_path = str(which("ffmpeg"))
-
-    command = f'"{ffmpeg_path}" -i "{video_path}"'
-    process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-    output, error = process.communicate()
+    command = [ffmpeg_path, "-i", video_path.as_posix()]
+    succ, outs = runn([command], 1, geterr=True)
 
     match = re.search(
         r"Duration\:(\s\d?\d\d\:\d\d\:\d\d\.\d\d)\,",
-        (output.decode() + error.decode()),
+        (outs[0]),
     )
 
     if match:
