@@ -4,6 +4,8 @@ from pathlib import Path
 
 import numpy as np
 
+from videohash.videoduration import video_duration_ffprobe
+
 from .exceptions import (
     FFmpegFailedToExtractFrames,
     FramesExtractorOutPutDirDoesNotExist,
@@ -79,7 +81,7 @@ class FramesExtractor:
         """
         # generate timestamps to test
         length = 4  # amount of samples to test
-        timestamps = np.linspace(0, self.duration - 0.1, length)
+        timestamps = np.linspace(0, self.duration - 0.3, length)
 
         commands: list[list[str]] = []
         for ts in timestamps:
@@ -115,8 +117,8 @@ class FramesExtractor:
         return []
 
     def _extract_seek(self, crop: list[str]):
-        # generate timestamps to extract (-0.1 cuz FFmpeg baka)
-        timestamps = np.linspace(0, self.duration - 0.1, self.frame_count)
+        # generate timestamps to extract (-0.3 cuz FFmpeg baka)
+        timestamps = np.linspace(0, self.duration - 0.3, self.frame_count)
 
         # build all commands
         commands: list[list[str]] = []
