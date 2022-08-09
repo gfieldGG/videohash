@@ -85,13 +85,13 @@ from .__version__ import (
 )
 from .exceptions import (
     CollageOfZeroFramesError,
-    DidNotSupplyPathOrUrl,
     FFmpegError,
     FFmpegFailedToExtractFrames,
     FFmpegNotFound,
     FramesExtractorOutPutDirDoesNotExist,
     StoragePathDoesNotExist,
     VideoHashError,
+    VideoHashNoDuration,
 )
 from .videoduration import video_duration
 from .videohash import VideoHash

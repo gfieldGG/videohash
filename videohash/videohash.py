@@ -11,6 +11,8 @@ from .exceptions import (
     StoragePathDoesNotExist,
     FFmpegError,
     FFmpegNotFound,
+    FFprobeError,
+    VideoHashNoDuration,
 )
 from .framesextractor import FramesExtractor
 from .utils import get_tempdir, get_files_in_dir
@@ -20,8 +22,7 @@ from .videoduration import video_duration
 class VideoHash:
 
     """
-    VideoHash class provides an interface for computing & comparing the video
-    hash values for videos(codec, containers etc) supported by FFmpeg.
+    VideoHash class provides an interface for computing a perceptual video hash for videos supported by FFmpeg.
     """
 
     def __init__(
@@ -34,33 +35,25 @@ class VideoHash:
         ffmpeg_path: Path | str = "ffmpeg",
     ) -> None:
         """
-        :param path: Absolute path of the input video file.
+        :param video_path: Absolute path of the input video file.
 
-        :param storage_path: Storage path for the files created by
-                             the instance, pass the absolute path of the
-                             directory.
-                             If no argument is passed then the instance will
-                             itself create the storage directory inside the
-                             temporary directory of the system.
-
-        :param frame_interval: Number of frames extracted per unit time, the
-                               default value is 1 per unit time. For 1 frame
-                               per 5 seconds pass 1/5 or 0.2. For 5 fps pass 5.
-                               Smaller frame_interval implies fewer frames and
-                               vice-versa.
-
+        :param storage_path: Base storage path for the files created by
+                             the instance.
+                             If no argument is passed then the instance will itself create a directory inside the temporary directory of the system.
 
         :return: None
-
-        :rtype: NoneType
         """
         if not isinstance(video_path, Path):
             video_path = Path(video_path)
         self.video_path = video_path.resolve()
         if not video_path.is_file():
             raise FileNotFoundError(f"No video found at '{self.video_path}'")
-
-        self.duration = video_duration(self.video_path)
+        try:
+            self.duration = video_duration(self.video_path)
+        except FFprobeError as e:
+            raise VideoHashNoDuration(
+                f"Failed to get video duration using ffprobe. Cannot generate phash without duration."
+            ) from e
 
         self._base_dir = storage_path
         self._check_and_create_working_dirs()
