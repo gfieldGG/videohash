@@ -215,3 +215,18 @@ class VideoHash:
             imagehash.phash(self.image).hash.flatten().astype(int).tolist()
         )
         self.hash: str = "0b" + "".join([str(i) for i in bitlist])
+
+
+def phash(video_path: Path, **kwargs) -> tuple[str, float]:
+    """
+    Convenience function to generate a perceptual hash for a video file.
+
+    Instantiates a `VideoHash` object, passing all `kwargs`, cleans up temp files and returns generated perceptual hash and video duration.
+
+    See `VideoHash` class for other available kwargs.
+
+    :return: `(phash, video_duration)`
+    """
+    vh = VideoHash(video_path=video_path, **kwargs)
+    vh.delete_storage_path()
+    return vh.hash, vh.duration
