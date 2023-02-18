@@ -73,3 +73,14 @@ def test_videohash_phash(videofile: Path):
 def test_videohash_phash_cleanup(videofile: Path, tmp_path):
     ph, dur = vh.phash(videofile, storage_path=tmp_path)
     assert not next(tmp_path.iterdir(), None)
+
+
+@pytest.mark.gold
+@pytest.mark.integration
+def test_videohash_ffmpeg_threads(videofile):
+    ph1, dur1 = vh.phash(video_path=videofile, ffmpeg_threads=1)
+    ph1, dur1 = vh.phash(video_path=videofile, ffmpeg_threads=4)
+    ph2, dur2 = vh.phash(video_path=videofile, ffmpeg_threads=8)
+    ph3, dur3 = vh.phash(video_path=videofile, ffmpeg_threads=16)
+    assert ph1 == ph2 == ph3
+    assert dur1 == dur2 == dur3
