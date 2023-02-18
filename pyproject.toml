@@ -1,21 +1,21 @@
 [tool.poetry]
 name = "videohash"
-version = "4.4.3"
+version = "4.4.4"
 description = ""
 authors = ["Akash Mahanty <akamhy@yahoo.com>", "gfield <github@gfield.de>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-Pillow = "^9.2.0"
+Pillow = "^9.4.0"
 ImageHash = "^4.3.1"
 imagedominantcolor = "^1.0.1"
 
 [tool.poetry.dev-dependencies]
-black = "^22.10.0"
-mypy = "^0.982"
-types-Pillow = ">=9.2.2"
-notebook = "^6.5.1"
+black = "^23.1.0"
+mypy = "^1.0.1"
+types-Pillow = ">=9.4.0"
+notebook = ">=6.5.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
