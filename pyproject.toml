@@ -35,4 +35,4 @@ addopts = ["--cov"]
 
 [tool.coverage.run]
 branch = true
-omit = ["tests/*", ".venv/*", "*/__init__.py"]
+omit = ["tests/*", ".venv/*", "*/__init__.py", "*/__version__.py", "*/exceptions.py"]
