@@ -3,6 +3,8 @@ import tempfile
 import subprocess
 import uuid
 
+import numpy as np
+
 
 def get_tempdir(basedir: Path = None) -> Path:
     base: Path = basedir or Path(tempfile.gettempdir())
@@ -61,3 +63,27 @@ def runn(
                 succ = False
 
     return True, outputs
+
+
+def to_bitstring(i: int) -> str:
+    return format(i, "064b")
+
+
+def to_int(s: str) -> int:
+    return int(s, 2)
+
+
+def hamming(sa, sb) -> int:
+    if not isinstance(sa, str):
+        sa = to_bitstring(sa)
+    if not isinstance(sb, str):
+        sb = to_bitstring(sb)
+
+    _bitlist_a = list(map(int, sa.replace("0b", "")))
+    _bitlist_b = list(map(int, sb.replace("0b", "")))
+    return len(
+        np.bitwise_xor(
+            _bitlist_a,
+            _bitlist_b,
+        ).nonzero()[0]
+    )
