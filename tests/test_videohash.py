@@ -8,7 +8,7 @@ from videohash import videohash as vh
 
 @pytest.fixture
 def videofile():
-    vf = Path("./tests/gold/rocket/rocket.mkv")
+    vf = Path("./tests/gold/rocket/video.mkv")
     assert vf.exists()
     return vf
 
