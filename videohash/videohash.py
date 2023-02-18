@@ -30,7 +30,7 @@ class VideoHash:
         storage_path: Path = None,
         frame_count: int = 16,
         frame_size: int = 240,
-        ffmpeg_threads: int = 16,
+        ffmpeg_threads: int = 4,
         ffmpeg_path: Path | str = "ffmpeg",
     ) -> None:
         """

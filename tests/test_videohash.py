@@ -36,7 +36,7 @@ def test_videohash_all(tmp_path: Path, videofile: Path):
     # defaults
     assert videohash.frame_count == 16
     assert videohash.frame_size == 240
-    assert videohash.ffmpeg_threads == 16
+    assert videohash.ffmpeg_threads == 4
     assert videohash.ffmpeg_path == "ffmpeg"
     assert videohash.hashlength == 64
 
