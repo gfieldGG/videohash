@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "videohash"
-version = "4.4.6"
+version = "4.4.7"
 description = ""
 authors = ["Akash Mahanty <akamhy@yahoo.com>", "gfield <github@gfield.de>"]
 license = "MIT"
@@ -11,11 +11,13 @@ Pillow = "^9.4.0"
 ImageHash = "^4.3.1"
 imagedominantcolor = "^1.0.1"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
 mypy = "^1.0.1"
 types-Pillow = ">=9.4.0"
 notebook = ">=6.5.2"
+pytest = "^7.2.1"
+pytest-cov = "^4.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -26,3 +28,11 @@ target-version = ["py311"]
 
 [tool.mypy]
 implicit_optional = true
+
+[tool.pytest.ini_options]
+markers = ["gold", "integration"]
+addopts = ["--cov"]
+
+[tool.coverage.run]
+branch = true
+omit = ["tests/*", ".venv/*", "*/__init__.py"]
