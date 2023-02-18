@@ -12,5 +12,7 @@ def videofile():
     return vf
 
 
+@pytest.mark.gold
+@pytest.mark.integration
 def test_video_duration(videofile):
     assert (video_duration(videofile) - 52.08) < 0.1
