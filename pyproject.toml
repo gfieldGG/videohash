@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "videohash"
-version = "4.4.5"
+version = "4.4.6"
 description = ""
 authors = ["Akash Mahanty <akamhy@yahoo.com>", "gfield <github@gfield.de>"]
 license = "MIT"
@@ -23,3 +23,6 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 target-version = ["py311"]
+
+[tool.mypy]
+implicit_optional = true

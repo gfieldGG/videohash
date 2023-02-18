@@ -4,7 +4,7 @@ import subprocess
 import uuid
 
 
-def get_tempdir(basedir: Path | None) -> Path:
+def get_tempdir(basedir: Path = None) -> Path:
     base: Path = basedir or Path(tempfile.gettempdir())
     tempdir = base / f"vh-{uuid.uuid4()}"
     if not tempdir.exists():
