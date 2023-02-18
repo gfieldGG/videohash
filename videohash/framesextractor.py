@@ -168,8 +168,7 @@ class FramesExtractor:
 
 
 def _get_timestamps(duration: float, n: int) -> Collection[float]:
-    """Get list of `n` evenly spaced timestamps in `duration`."""
+    """Get list of `n` evenly spaced timestamps in `duration` excluding the start and end time."""
 
-    # ignore endpoint cuz ffmpeg dumb af
-    timestamps = np.linspace(0, duration, n, endpoint=False)
-    return timestamps
+    timestamps = np.linspace(0, duration, n + 1, endpoint=False)
+    return timestamps[1:]

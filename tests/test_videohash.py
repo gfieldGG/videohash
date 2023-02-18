@@ -50,7 +50,7 @@ def test_videohash_all(tmp_path: Path, videofile: Path):
     # calculated results
     assert (
         videohash.hash
-        == "0b1010110010101100010001111111010010001101000010011001011100110011"
+        == "0b1011000010110001011110110000110011011000110110101000011100101011"
     )
     assert videohash.duration == 52.079
 
@@ -64,7 +64,7 @@ def test_videohash_all(tmp_path: Path, videofile: Path):
 @pytest.mark.integration
 def test_videohash_phash(videofile: Path):
     ph, dur = vh.phash(videofile)
-    assert ph == "0b1010110010101100010001111111010010001101000010011001011100110011"
+    assert ph == "0b1011000010110001011110110000110011011000110110101000011100101011"
     assert dur == 52.079
 
 
