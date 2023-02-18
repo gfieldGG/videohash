@@ -59,7 +59,7 @@ class MakeCollage:
     def __init__(
         self,
         image_list: Collection[Path],
-        output_path: str,
+        output_path: Path,
         frame_size: int,
     ) -> None:
         """
