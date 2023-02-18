@@ -1,144 +1,75 @@
-import os
-
 import pytest
 
-from videohash.exceptions import DidNotSupplyPathOrUrl, StoragePathDoesNotExist
-from videohash.utils import create_and_return_temporary_directory
-from videohash.videohash import VideoHash
+from math import sqrt
+from pathlib import Path
 
-this_dir = os.path.dirname(os.path.realpath(__file__))
+from videohash import videohash as vh
 
 
-def test_all():
+@pytest.fixture
+def videofile():
+    vf = Path("./tests/gold/rocket/video.mkv")
+    assert vf.exists()
+    return vf
 
-    source1 = (
-        "https://raw.githubusercontent.com/akamhy/videohash/main/assets/rocket.mkv"
-    )
-    videohash1 = VideoHash(url=source1, frame_interval=3)
-    videohash1.delete_storage_path()
-    hash1 = videohash1.hash
-    hash_hex1 = videohash1.hash_hex
-    assert hash1 == "0b1010100110101001111111111111101101011110101100010000001100000011"
+
+@pytest.fixture()
+def vhobject(videofile, tmp_path):
+    return vh.VideoHash(videofile, tmp_path)
+
+
+@pytest.mark.gold
+@pytest.mark.integration
+def test_videohash_all(tmp_path: Path, videofile: Path):
+    videohash = vh.VideoHash(videofile, tmp_path)
+
+    # paths and files
+    assert videohash.video_path == videofile.resolve()
+    assert videohash.storage_path.parent == tmp_path
+    assert videohash.storage_path.exists()
+    assert videohash.frames_dir == Path(videohash.storage_path / "frames")
+    assert videohash.frames_dir.exists()
+    assert videohash.collage_dir == Path(videohash.storage_path / "collage")
+    assert videohash.collage_dir.exists()
+    assert videohash.collage_path == Path(videohash.collage_dir / "collage.jpg")
+
+    # defaults
+    assert videohash.frame_count == 16
+    assert videohash.frame_size == 240
+    assert videohash.ffmpeg_threads == 16
+    assert videohash.ffmpeg_path == "ffmpeg"
+    assert videohash.hashlength == 64
+
+    # extracted frames
+    assert len(list(videohash.frames_dir.glob("*"))) == videohash.frame_count
+
+    # collage properties
+    expectedsize = round(sqrt(videohash.frame_count)) * videohash.frame_size
+    assert videohash.image.size == (expectedsize, expectedsize)
+
+    # calculated results
     assert (
-        str(videohash1)
-        == "0b1010100110101001111111111111101101011110101100010000001100000011"
+        videohash.hash
+        == "0b1010110010101100010001111111010010001101000010011001011100110011"
     )
-    assert hash_hex1 == "0xa9a9fffb5eb10303"
-    assert (
-        videohash1
-        - "0b1010100110101001111111111111101101011110101100010000001100000011"
-        == 0
-    )
-    assert hash_hex1 in repr(videohash1)
-    assert hash1 in repr(videohash1)
-    assert (len(videohash1) - 2) == videohash1.bits_in_hash
-    with pytest.raises(AssertionError):
-        assert videohash1 != hash_hex1
+    assert videohash.duration == 52.079
 
-    with pytest.raises(TypeError):
-        _ = videohash1 - None
+    # cleanup
+    videohash.delete_storage_path()
+    assert tmp_path.exists()
+    assert not next(tmp_path.iterdir(), None)
 
-    with pytest.raises(ValueError):
-        _ = videohash1 - hash1[0:-2]
 
-    with pytest.raises(TypeError):
-        _ = videohash1 - ("XX" + hash1[2:])
+@pytest.mark.gold
+@pytest.mark.integration
+def test_videohash_phash(videofile: Path):
+    ph, dur = vh.phash(videofile)
+    assert ph == "0b1010110010101100010001111111010010001101000010011001011100110011"
+    assert dur == 52.079
 
-    with pytest.raises(TypeError):
-        _ = videohash1 - True
 
-    source2 = (
-        this_dir
-        + os.path.sep
-        + os.path.pardir
-        + os.path.sep
-        + "assets"
-        + os.path.sep
-        + "rocket.mkv"
-    )
-    videohash2 = VideoHash(path=source2, frame_interval=3)
-    hash2 = videohash2.hash
-    hash_hex2 = videohash2.hash_hex
-    assert hash2 == "0b1010100110101001111111111111101101011110101100010000001100000011"
-    assert hash_hex2 == "0xa9a9fffb5eb10303"
-
-    source3 = "https://www.youtube.com/watch?v=PapBjpzRhnA"
-    videohash3 = VideoHash(url=source3)
-    hash3 = videohash3.hash
-    hash_hex3 = videohash3.hash_hex
-    assert hash3 == "0b0111110001010111111011111111111100101110111010000000001100000011"
-    assert hash_hex3 == "0x7c57efff2ee80303"
-
-    assert hash1 == hash2
-    assert videohash1.is_similar(videohash2)
-    assert videohash1 == videohash2.bitlist
-
-    assert hash_hex1 == hash_hex2
-    assert videohash1 - hash_hex3 != 2
-
-    assert videohash1 == videohash2
-    assert videohash1 - videohash3 != 2
-
-    source4 = "https://www.youtube.com/watch?v=_T8cn2J13-4"
-    videohash4 = VideoHash(url=source4, download_worst=True)
-    hash4 = videohash4.hash
-
-    assert hash4 != hash1
-    assert hash4 != hash2
-    assert hash4 != hash3
-
-    assert videohash1 != videohash4
-    assert videohash2 != videohash4
-    assert videohash3 != videohash4
-    assert videohash3.is_different(videohash4)
-
-    with pytest.raises(ValueError):
-        # not padded with 0x
-        VideoHash.hex2bin("741fcfff8f780000", 64)
-
-    with pytest.raises(ValueError):
-        # not padded with 0b
-        VideoHash.bin2hex("010101001")
-
-    with pytest.raises(ValueError):
-        # hamming distance not defined for unequal length bitlists
-        _ = videohash1 - [1, 0, 1, 1, 1]
-
-    class FakeVideoHashForTesting(VideoHash):
-        def __init__(self, hash=None):
-            self.hash = hash
-
-    fake_videohash_object = FakeVideoHashForTesting(hash="0b0011010")
-    fake_videohash_object.hamming_distance(string_a="0b1011010", string_b="0b1011010")
-
-    fake_videohash_object = FakeVideoHashForTesting()
-    with pytest.raises(ValueError):
-        # hamming_distance is not defined.
-        fake_videohash_object.hamming_distance(string_a="abc", string_b="abcd")
-
-    with pytest.raises(ValueError):
-        # hamming_distance is not defined.
-        fake_videohash_object.hamming_distance(
-            bitlist_a=[1, 0, 1, 1, 0], bitlist_b=[1, 0, 1, 1]
-        )
-
-    with pytest.raises(DidNotSupplyPathOrUrl):
-        VideoHash(url=None, path=None)
-
-    with pytest.raises(StoragePathDoesNotExist):
-        storage_path = os.path.join(
-            create_and_return_temporary_directory(),
-            ("thisdirdoesnotexist" + os.path.sep),
-        )
-        VideoHash(url="https://example.com", storage_path=storage_path)
-
-    with pytest.raises(ValueError):
-        VideoHash(
-            url="https://example.com", path=create_and_return_temporary_directory()
-        )
-
-    with pytest.raises(ValueError):
-        path = os.path.join(
-            create_and_return_temporary_directory(), "file_extension_less_video"
-        )
-        VideoHash(path=path)
+@pytest.mark.gold
+@pytest.mark.integration
+def test_videohash_phash_cleanup(videofile: Path, tmp_path):
+    ph, dur = vh.phash(videofile, storage_path=tmp_path)
+    assert not next(tmp_path.iterdir(), None)

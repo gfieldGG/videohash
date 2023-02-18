@@ -1,4 +1,3 @@
-import os
 import shutil
 from pathlib import Path
 from subprocess import check_output
@@ -79,7 +78,7 @@ class VideoHash:
             frame_size=frame_size,
         )
 
-        self.collage_path = os.path.join(self.collage_dir, "collage.jpg")
+        self.collage_path = Path(self.collage_dir / "collage.jpg")
 
         MakeCollage(
             image_list=get_files_in_dir(self.frames_dir),
