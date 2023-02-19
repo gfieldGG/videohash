@@ -1,7 +1,7 @@
 import os
 import re
 from pathlib import Path
-from typing import Collection
+from typing import Iterable
 
 import numpy as np
 
@@ -167,7 +167,7 @@ class FramesExtractor:
         )
 
 
-def _get_timestamps(duration: float, n: int) -> Collection[float]:
+def _get_timestamps(duration: float, n: int) -> Iterable[float]:
     """Get list of `n` evenly spaced timestamps in `duration` excluding the start and end time."""
 
     timestamps = np.linspace(0, duration, n + 1, endpoint=False)
