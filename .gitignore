@@ -1,5 +1,6 @@
 *.ipynb
 temp/
+samples.txt
 
 # Report
 report.html
