@@ -1,6 +1,7 @@
 import shutil
 from pathlib import Path
 from subprocess import check_output
+from math import isqrt
 
 from PIL import Image
 import imagehash
@@ -28,6 +29,7 @@ class VideoHash:
         self,
         video_path: Path | str,
         storage_path: Path = None,
+        hash_length: int = 64,
         frame_count: int = 16,
         frame_size: int = 240,
         ffmpeg_threads: int = 4,
@@ -42,6 +44,12 @@ class VideoHash:
 
         :return: None
         """
+        if hash_length < 2 or isqrt(hash_length) ** 2 != hash_length:
+            raise ValueError(
+                f"Invalid hash length '{hash_length}'.\nMust be greater than or equal to 4 and a perfect square."
+            )
+        self.hashlength = hash_length
+
         if not isinstance(video_path, Path):
             video_path = Path(video_path)
         self.video_path = video_path.resolve()
@@ -87,7 +95,6 @@ class VideoHash:
         )
 
         self.image = Image.open(self.collage_path)
-        self.hashlength = 64
 
         self._calc_hash()
 
@@ -210,10 +217,11 @@ class VideoHash:
 
         :rtype: NoneType
         """
-        bitlist: list[int] = (
-            imagehash.phash(self.image).hash.flatten().astype(int).tolist()
-        )
-        self.hash: str = "0b" + "".join([str(i) for i in bitlist])
+        bitlist = imagehash.phash(
+            self.image, hash_size=isqrt(self.hashlength)
+        ).hash.flatten()
+
+        self.hash: str = "0b" + "".join([f"{i}" for i in bitlist.astype(int)])
 
 
 def phash(video_path: Path, **kwargs) -> tuple[str, float]:
