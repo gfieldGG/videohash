@@ -46,7 +46,7 @@ def test_videohash_hash_length_invalid(tmp_path, hash_length):
     assert not videofile.exists()
 
     with pytest.raises(ValueError) as e_info:
-        vh.VideoHash(videofile, hash_length=hash_length, storage_path=tmp_path)
+        vh.VideoHash(videofile, hash_length=hash_length)
 
 
 @pytest.mark.gold
