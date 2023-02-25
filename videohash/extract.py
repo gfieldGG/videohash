@@ -31,7 +31,7 @@ def _detect_crop(
             [
                 ffmpeg_path,
                 "-v",
-                "1",
+                "32",
                 "-ss",
                 f"{ts}",
                 "-i",
@@ -46,7 +46,7 @@ def _detect_crop(
             ]
         )
 
-    succ, outs = runn(commands, n=samples, getout=True, raw=False)
+    succ, outs = runn(commands, n=samples, getout=True, geterr=True, raw=False)
 
     crop_list: list[str] = []
     for out in outs:
