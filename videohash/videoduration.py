@@ -19,7 +19,7 @@ def video_duration(video_path: Path) -> float:
         "-i",
         video_path.as_posix(),
     ]
-    succ, outs = runn([args], 1, getout=True)
+    succ, outs = runn([args], 1, getout=True, raw=False)
 
     if succ:
         try:
@@ -30,5 +30,5 @@ def video_duration(video_path: Path) -> float:
             ) from None
 
     raise FFprobeVideoDurationReadError(
-        f"ffprobe error while trying to read video duration from '{video_path}':\n{outs[0]}"
+        f"ffprobe error while trying to read video duration from '{video_path}'"
     )
