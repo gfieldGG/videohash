@@ -24,8 +24,12 @@ def argstostr(args) -> str:
 
 
 def runn(
-    commands: list[list[str]] | list[str], n: int = 4, geterr=False, getout=False
-) -> tuple[bool, list[str]]:
+    commands: list[list[str]] | list[str],
+    n: int = 4,
+    geterr=False,
+    getout=False,
+    raw=False,
+) -> tuple[bool, list[str | bytes]]:
     """
     Run list of commands in batches of `n`. Aborts on any non-zero exit code.
 
@@ -33,10 +37,11 @@ def runn(
 
     :param commands: List of commands to run as either arglists or strings.
     :param n: Number of commands to run in parallel per batch, defaults to 4. HAS TO BE A MULTIPLE OF, LESS THAN OR EQUAL TO `len(commands)`.
+    :param raw: Do not byte-decode stdout and stderr (if captured).
     :return int: Count of non-zero returncodes.
     """
     succ = True
-    outputs = []
+    outputs: list[str | bytes] = []
     for j in range(max(int(len(commands) / n), 1)):
         procs = [
             subprocess.Popen(
@@ -51,11 +56,16 @@ def runn(
         for p in procs:
             out, err = p.communicate()
 
+            output = None
+
             if getout or geterr:
-                outputs.append(
-                    (out or b"").decode(errors="ignore")
-                    + (err or b"").decode(errors="ignore")
-                )
+                if raw:
+                    outputs.append((out or b"") + (err or b""))
+                else:  # decode bytes to string
+                    outputs.append(
+                        (out or b"").decode(errors="ignore")
+                        + (err or b"").decode(errors="ignore")
+                    )
 
             if p.returncode:  # error
                 if not getout or geterr:

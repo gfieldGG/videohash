@@ -17,20 +17,6 @@ class VideoHashNoDuration(VideoHashError):
     pass
 
 
-class StoragePathDoesNotExist(VideoHashError):
-    """
-    The storage base path passed by the user does not exist.
-    """
-
-    pass
-
-
-class FramesExtractorOutPutDirDoesNotExist(VideoHashError):
-    """The frames output directory passed to the frame extractor does not exist."""
-
-    pass
-
-
 class CollageOfZeroFramesError(VideoHashError):
     """Raised if zero frames are passed for collage making."""
 

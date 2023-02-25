@@ -88,8 +88,6 @@ from .exceptions import (
     FFmpegError,
     FFmpegFailedToExtractFrames,
     FFmpegNotFound,
-    FramesExtractorOutPutDirDoesNotExist,
-    StoragePathDoesNotExist,
     VideoHashError,
     VideoHashNoDuration,
 )
