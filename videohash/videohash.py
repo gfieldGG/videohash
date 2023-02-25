@@ -1,20 +1,17 @@
-import shutil
 from pathlib import Path
 from subprocess import check_output
 from math import isqrt
 
-from PIL import Image
 import imagehash
 
 from .exceptions import (
-    StoragePathDoesNotExist,
     FFmpegError,
     FFmpegNotFound,
     FFprobeError,
     VideoHashNoDuration,
 )
-from .framesextractor import extract_frames
-from .collagemaker import make_collage
+from .extract import extract_frames
+from .collage import make_collage
 from .videoduration import video_duration
 
 
@@ -85,13 +82,7 @@ class VideoHash:
 
     def __str__(self) -> str:
         """
-        The video hash value of the instance. The hash value is 64 bit string
-        prefixed with '0b', indicating the that the hash value is a bitstring.
-
-        :return: The string representation of the instance. The video hash value
-                 itself is the returned value.
-
-        :rtype: str
+        The perceptual hash as a bitstring prefixed with '0b'.
         """
 
         return self.hash
@@ -101,20 +92,13 @@ class VideoHash:
         Developer's representation of the VideoHash object.
 
         :return: Developer's representation of the instance.
-
-        :rtype: str
         """
 
         return f"VideoHash(hash={self.hash}, hashlength={self.hashlength}"
 
     def __len__(self) -> int:
         """
-        Length of the hash value string. Total length is 66 characters, 64 for
-        the bitstring and 2 for the prefix '0b'.
-
-        :return: Length of the the hash value, including the prefix '0b'.
-
-        :rtype: int
+        Length of the the perceptual hash value, including the prefix '0b'.
         """
         return len(self.hash)
 
@@ -136,17 +120,7 @@ class VideoHash:
 
     def _calc_hash(self) -> None:
         """
-        Calculates the hash value by calling the phash (perceptual hash) method of
-        imagehash package. The wavelet hash of the collage is the videohash for
-        the original input video.
-
-        End-user is not provided any access to the imagehash instance but
-        instead the binary and hexadecimal equivalent of the result of
-        wavelet-hash.
-
-        :return: None
-
-        :rtype: NoneType
+        Calculate the hash value by calling the phash (perceptual hash) method of ImageHash package. The perceptual hash of the collage is the VideoHash for the original input video.
         """
         bitlist = imagehash.phash(
             self.image, hash_size=isqrt(self.hashlength)
@@ -154,15 +128,12 @@ class VideoHash:
 
         self.image.close()
 
-        # TODO different format
         self.hash: str = "0b" + "".join([f"{i}" for i in bitlist.astype(int)])
 
 
 def phash(video_path: Path, **kwargs) -> tuple[str, float]:
     """
-    Convenience function to generate a perceptual hash for a video file.
-
-    Instantiates a `VideoHash` object, passing all `kwargs`, cleans up temp files and returns generated perceptual hash and video duration.
+    Convenience function to generate a perceptual hash for a video file and return both the hash and video duration as a tuple.
 
     See `VideoHash` class for other available kwargs.
 
