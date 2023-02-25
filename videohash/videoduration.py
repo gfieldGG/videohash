@@ -17,7 +17,7 @@ def video_duration(video_path: Path) -> float:
         "-of",
         "default=noprint_wrappers=1:nokey=1",
         "-i",
-        video_path.as_posix(),
+        f"{video_path}",
     ]
     succ, outs = runn([args], 1, getout=True, raw=False)
 

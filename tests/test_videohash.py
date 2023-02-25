@@ -55,3 +55,8 @@ def test_videohash_hash_length_invalid(tmp_path, hash_length):
 def test_videohash_hash_length(videofile, hash_length):
     ph, dur = vh.phash(videofile, hash_length=hash_length)
     assert len(ph) == hash_length + 2
+
+
+def test_videohash_videopathtype():
+    vh.VideoHash("./tests/gold/rocket/video.mkv")
+    vh.VideoHash(Path("./tests/gold/rocket/video.mkv"))
