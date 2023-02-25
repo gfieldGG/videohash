@@ -36,7 +36,7 @@ def _detect_crop(
                 f"{ts}",
                 "-i",
                 f"{video_path}",
-                "-vframes",
+                "-frames:v",
                 f"{samplesize}",
                 "-vf",
                 "cropdetect",
