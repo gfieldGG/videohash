@@ -45,7 +45,7 @@ def test_videohash_all(tmp_path: Path, videofile: Path):
 
     # collage properties
     expectedsize = round(sqrt(videohash.frame_count)) * videohash.frame_size
-    assert videohash.image.size == (expectedsize, expectedsize)
+    assert videohash._collage.size == (expectedsize, expectedsize)
 
     # calculated results
     assert (

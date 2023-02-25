@@ -73,7 +73,7 @@ class VideoHash:
             ffmpeg_path=self.ffmpeg_path,
         )
 
-        self.image = make_collage(
+        self._collage = make_collage(
             image_list=frames,
             frame_size=self.frame_size,
         )
@@ -123,10 +123,10 @@ class VideoHash:
         Calculate the hash value by calling the phash (perceptual hash) method of ImageHash package. The perceptual hash of the collage is the VideoHash for the original input video.
         """
         bitlist = imagehash.phash(
-            self.image, hash_size=isqrt(self.hashlength)
+            self._collage, hash_size=isqrt(self.hashlength)
         ).hash.flatten()
 
-        self.image.close()
+        self._collage.close()
 
         self.hash: str = "0b" + "".join([f"{i}" for i in bitlist.astype(int)])
 
