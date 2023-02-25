@@ -14,14 +14,19 @@ def _detect_crop(
     duration: float,
     ffmpeg_path: str,
     samples: int = 4,
-    samplesize=1,
+    samplesize: int = 2,
 ):
     """
     Detect video crop using ffmpeg `cropdetect` and return crop values as `[-vf, ]` to use in ffmpeg commands.
 
     :param samples: The number of (evenly spaced) timestamps to analyze.
-    :param samplesize: The amount of frames to analyze per timestamp.
+    :param samplesize: The amount of frames to analyze per timestamp (at least 2)
     """
+    if samplesize < 2:
+        raise ValueError(
+            f"samplesize for crop detection must be at least two (got '{samplesize}')"
+        )
+
     # generate timestamps to test
     timestamps = _get_timestamps(duration, samples)
 
@@ -36,7 +41,7 @@ def _detect_crop(
                 f"{ts}",
                 "-i",
                 f"{video_path}",
-                "-frames:v",
+                "-vframes",
                 f"{samplesize}",
                 "-vf",
                 "cropdetect",
