@@ -1,6 +1,5 @@
 import pytest
 
-from math import sqrt
 from pathlib import Path
 
 from videohash import videohash as vh
