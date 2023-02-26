@@ -14,6 +14,7 @@ from .exceptions import (
 from .extract import extract_frames
 from .collage import make_collage
 from .videoduration import video_duration
+from .utils import runn
 
 
 class VideoHash:
@@ -54,29 +55,23 @@ class VideoHash:
                 f"Failed to get video duration using ffprobe. Cannot generate phash without duration."
             ) from e
 
-        if isinstance(ffmpeg_path, Path):
-            self.ffmpeg_path = ffmpeg_path.resolve().as_posix()
-        else:
-            self.ffmpeg_path = ffmpeg_path
-        self._check_ffmpeg()
+        ffmpeg_path = _check_ffmpeg(ffmpeg_path=ffmpeg_path)
 
-        self.ffmpeg_threads = ffmpeg_threads
-
-        self.frame_count = frame_count
-        self.frame_size = frame_size
+        self._frame_count = frame_count
+        self._frame_size = frame_size
 
         frames = extract_frames(
             self.video_path,
             duration=self.duration,
-            frame_count=self.frame_count,
-            frame_size=self.frame_size,
-            ffmpeg_threads=self.ffmpeg_threads,
-            ffmpeg_path=self.ffmpeg_path,
+            frame_count=self._frame_count,
+            frame_size=self._frame_size,
+            ffmpeg_threads=ffmpeg_threads,
+            ffmpeg_path=ffmpeg_path,
         )
 
         self._collage = make_collage(
             image_list=frames,
-            frame_size=self.frame_size,
+            frame_size=self._frame_size,
         )
 
         self._calc_hash()
@@ -100,25 +95,9 @@ class VideoHash:
 
     def __len__(self) -> int:
         """
-        Length of the the perceptual hash value, including the prefix '0b'.
+        Bit length of the the perceptual hash value.
         """
         return len(self.hash)
-
-    def _check_ffmpeg(self) -> None:
-        """
-        Check the FFmpeg path and runs 'ffmpeg -version' to verify that FFmpeg is found and works.
-        """
-        try:
-            # check_output will raise FileNotFoundError if it does not find ffmpeg
-            output = check_output([self.ffmpeg_path, "-version"]).decode()
-        except FileNotFoundError:
-            raise FFmpegNotFound(f"FFmpeg not found at '{self.ffmpeg_path}'")
-
-        else:
-            if "ffmpeg version" not in output:
-                raise FFmpegError(
-                    f"Unexpected response for '{self.ffmpeg_path} -version':\n{output}"
-                )
 
     def _calc_hash(self) -> None:
         """
@@ -128,6 +107,31 @@ class VideoHash:
 
         self.hash: np.ndarray = ih.hash.flatten()
         self.hex: str = f"{ih}"
+
+
+def _check_ffmpeg(ffmpeg_path: Path | str) -> str:
+    """
+    Check the FFmpeg path and run 'ffmpeg -version' to verify that FFmpeg is found and works.
+    """
+    if isinstance(ffmpeg_path, Path):
+        ffmpeg_path = ffmpeg_path.resolve().as_posix()
+
+    try:
+        succ, outs = runn(
+            [[ffmpeg_path, "-version"]],
+            n=1,
+            getout=True,
+            geterr=True,
+            raw=False,
+        )
+    except (FileNotFoundError, OSError):
+        raise FFmpegNotFound(f"FFmpeg not found at '{ffmpeg_path}'")
+    else:
+        if "ffmpeg version" not in outs[0]:
+            raise FFmpegError(
+                f"Unexpected response for '{ffmpeg_path} -version':\n{outs[0]}"  # type:ignore
+            )
+    return ffmpeg_path
 
 
 def phash(video_path: Path, **kwargs) -> tuple[np.ndarray, float]:
