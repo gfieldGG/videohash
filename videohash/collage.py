@@ -1,4 +1,4 @@
-from math import sqrt
+from math import isqrt
 from pathlib import Path
 from typing import Collection
 
@@ -18,7 +18,7 @@ def make_collage(
     if number_of_images == 0:
         raise CollageOfZeroFramesError("Can not make a collage of zero images.")
 
-    collage_frames_per_row = round(sqrt(number_of_images))
+    collage_frames_per_row = isqrt(number_of_images)
     collage_size = collage_frames_per_row * frame_size
 
     # create a black base image of collage_size x collage_size
