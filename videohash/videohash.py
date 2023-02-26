@@ -24,7 +24,7 @@ class VideoHash:
     def __init__(
         self,
         video_path: Path | str,
-        hash_length: int = 64,
+        hash_length: int = 256,
         frame_count: int = 16,
         frame_size: int = 240,
         ffmpeg_threads: int = 4,
