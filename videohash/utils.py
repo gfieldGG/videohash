@@ -75,25 +75,17 @@ def runn(
     return True, outputs
 
 
-def to_bitstring(i: int) -> str:
-    return format(i, "064b")
+def hex_to_bitstr(s: str) -> str:
+    l = len(s) * 4
+    return format(int(s, 16), f"0{l}b")
 
 
-def to_int(s: str) -> int:
-    return int(s, 2)
+def hamming(a, b) -> int:
+    if isinstance(a, str):
+        a = hex_to_bitstr(a)
+        a = list(map(int, a))
+    if isinstance(b, str):
+        b = hex_to_bitstr(b)
+        b = list(map(int, b))
 
-
-def hamming(sa, sb) -> int:
-    if not isinstance(sa, str):
-        sa = to_bitstring(sa)
-    if not isinstance(sb, str):
-        sb = to_bitstring(sb)
-
-    _bitlist_a = list(map(int, sa.replace("0b", "")))
-    _bitlist_b = list(map(int, sb.replace("0b", "")))
-    return len(
-        np.bitwise_xor(
-            _bitlist_a,
-            _bitlist_b,
-        ).nonzero()[0]
-    )
+    return np.bitwise_xor(a, b).sum()

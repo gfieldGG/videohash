@@ -3,6 +3,7 @@ from subprocess import check_output
 from math import isqrt
 
 import imagehash
+import numpy as np
 
 from .exceptions import (
     FFmpegError,
@@ -83,10 +84,10 @@ class VideoHash:
 
     def __str__(self) -> str:
         """
-        The perceptual hash as a bitstring prefixed with '0b'.
+        The perceptual hash as a hex string.
         """
 
-        return self.hash
+        return self.hex
 
     def __repr__(self) -> str:
         """
@@ -95,7 +96,7 @@ class VideoHash:
         :return: Developer's representation of the instance.
         """
 
-        return f"VideoHash(hash={self.hash}, hashlength={self.hashlength}"
+        return f"VideoHash(hash={self.hex}, hashlength={self.hashlength}"
 
     def __len__(self) -> int:
         """
@@ -123,16 +124,15 @@ class VideoHash:
         """
         Calculate the hash value by calling the phash (perceptual hash) method of ImageHash package. The perceptual hash of the collage is the VideoHash for the original input video.
         """
-        bitlist = imagehash.phash(
-            self._collage, hash_size=isqrt(self.hashlength)
-        ).hash.flatten()
+        ih = imagehash.phash(self._collage, hash_size=isqrt(self.hashlength))
 
-        self.hash: str = "0b" + "".join([f"{i}" for i in bitlist.astype(int)])
+        self.hash: np.ndarray = ih.hash.flatten()
+        self.hex: str = f"{ih}"
 
 
-def phash(video_path: Path, **kwargs) -> tuple[str, float]:
+def phash(video_path: Path, **kwargs) -> tuple[np.ndarray, float]:
     """
-    Convenience function to generate a perceptual hash for a video file and return both the hash and video duration as a tuple.
+    Convenience function to generate a perceptual hash for a video file and return both the hash (bool array) and video duration as a tuple.
 
     See `VideoHash` class for other available kwargs.
 
@@ -140,3 +140,15 @@ def phash(video_path: Path, **kwargs) -> tuple[str, float]:
     """
     vh = VideoHash(video_path=video_path, **kwargs)
     return vh.hash, vh.duration
+
+
+def phex(video_path: Path, **kwargs) -> tuple[str, float]:
+    """
+    Convenience function to generate a perceptual hash for a video file and return both the hash (hex string) and video duration as a tuple.
+
+    See `VideoHash` class for other available kwargs.
+
+    :return: `(phash, video_duration)`
+    """
+    vh = VideoHash(video_path=video_path, **kwargs)
+    return vh.hex, vh.duration
