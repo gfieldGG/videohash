@@ -79,6 +79,7 @@ class VideoHash:
         )
 
         self._calc_hash()
+        self._collage.close()
 
     def __str__(self) -> str:
         """
@@ -125,8 +126,6 @@ class VideoHash:
         bitlist = imagehash.phash(
             self._collage, hash_size=isqrt(self.hashlength)
         ).hash.flatten()
-
-        self._collage.close()
 
         self.hash: str = "0b" + "".join([f"{i}" for i in bitlist.astype(int)])
 
