@@ -36,8 +36,6 @@ def make_collage(
         # paste the frame image onto base image
         collage_image.paste(frame, (x, y))
 
-        frame.close()
-
         # get the x coordinate of the next frame
         x += frame_size
 

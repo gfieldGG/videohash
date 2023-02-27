@@ -8,7 +8,7 @@ import numpy as np
 from .exceptions import (
     FFmpegError,
     FFmpegNotFound,
-    FFprobeError,
+    FFmpegVideoDurationReadError,
     VideoHashNoDuration,
 )
 from .extract import extract_frames
@@ -48,14 +48,14 @@ class VideoHash:
         if not video_path.is_file():
             raise FileNotFoundError(f"No video found at '{self.video_path}'")
 
+        ffmpeg_path = _check_ffmpeg(ffmpeg_path=ffmpeg_path)
+
         try:
-            self.duration = video_duration(self.video_path)
-        except FFprobeError as e:
+            self.duration = video_duration(self.video_path, ffmpeg_path)
+        except FFmpegVideoDurationReadError as e:
             raise VideoHashNoDuration(
                 f"Failed to get video duration using ffprobe. Cannot generate phash without duration."
             ) from e
-
-        ffmpeg_path = _check_ffmpeg(ffmpeg_path=ffmpeg_path)
 
         self._frame_count = frame_count
         self._frame_size = frame_size
@@ -73,8 +73,10 @@ class VideoHash:
             image_list=frames,
             frame_size=self._frame_size,
         )
+        for f in frames:
+            f.close()
 
-        self._calc_hash()
+        self.hash, self.hex = _calc_hash(self._collage, self.hashlength)
         self._collage.close()
 
     def __str__(self) -> str:
@@ -99,26 +101,28 @@ class VideoHash:
         """
         return len(self.hash)
 
-    def _calc_hash(self) -> None:
-        """
-        Calculate the hash value by calling the phash (perceptual hash) method of ImageHash package. The perceptual hash of the collage is the VideoHash for the original input video.
-        """
-        ih = imagehash.phash(self._collage, hash_size=isqrt(self.hashlength))
 
-        self.hash: np.ndarray = ih.hash.flatten()
-        self.hex: str = f"{ih}"
+def _calc_hash(img, hashlen: int) -> tuple[np.ndarray, str]:
+    """
+    Calculate the hash value by calling the phash (perceptual hash) method of ImageHash package. The perceptual hash of the collage is the VideoHash for the original input video.
+    """
+    ih = imagehash.phash(img, hash_size=isqrt(hashlen))
+
+    hash: np.ndarray = ih.hash.flatten()
+    hex: str = f"{ih}"
+    return hash, hex
 
 
-def _check_ffmpeg(ffmpeg_path: Path | str) -> str:
+def _check_ffmpeg(ffmpeg_path: Path | str) -> Path | str:
     """
     Check the FFmpeg path and run 'ffmpeg -version' to verify that FFmpeg is found and works.
     """
     if isinstance(ffmpeg_path, Path):
-        ffmpeg_path = ffmpeg_path.resolve().as_posix()
+        ffmpeg_path = ffmpeg_path.resolve()
 
     try:
         succ, outs = runn(
-            [[ffmpeg_path, "-version"]],
+            [[f"{ffmpeg_path}", "-version"]],
             n=1,
             getout=True,
             geterr=True,

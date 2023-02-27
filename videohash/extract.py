@@ -12,7 +12,7 @@ from .utils import runn
 def _detect_crop(
     video_path: Path,
     duration: float,
-    ffmpeg_path: str,
+    ffmpeg_path: Path | str,
     samples: int = 4,
     samplesize: int = 2,
 ):
@@ -34,14 +34,15 @@ def _detect_crop(
     for ts in timestamps:
         commands.append(
             [
-                ffmpeg_path,
+                f"{ffmpeg_path}",
                 "-v",
                 "32",
+                "-hide_banner",
                 "-ss",
                 f"{ts}",
                 "-i",
                 f"{video_path}",
-                "-vframes",
+                "-frames:v",
                 f"{samplesize}",
                 "-vf",
                 "cropdetect",
@@ -74,7 +75,7 @@ def extract_frames(
     frame_count: int,
     frame_size: int,
     ffmpeg_threads: int,
-    ffmpeg_path: str,
+    ffmpeg_path: Path | str,
 ) -> list[Image.Image]:
     crop = _detect_crop(
         video_path=video_path,
