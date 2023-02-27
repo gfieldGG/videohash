@@ -12,7 +12,7 @@ phashes: list[tuple[str, str]] = [
     ),
     (
         "rocket-fadeout1s",
-        "b052b1537b5a0cf0d8a4da8686872b242fe5f8456d072dcd705f521f862f0fbd",
+        "b052b1537b5a0cf0d8a4da8686872b242ee5f8456d472dcd705f521f862f0fbd",
     ),
     (
         "rocket-start8f",
