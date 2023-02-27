@@ -73,6 +73,8 @@ class VideoHash:
             image_list=frames,
             frame_size=self._frame_size,
         )
+        for f in frames:
+            f.close()
 
         self._calc_hash()
         self._collage.close()
