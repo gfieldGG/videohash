@@ -37,6 +37,7 @@ def read_samples():
     if sf.exists() and sf.is_file():
         with open(sf, "r") as f:
             return [tuple(l.strip("\n").rsplit(" ", 1)) for l in f.readlines()]
+    return []
 
 
 @pytest.mark.gold
