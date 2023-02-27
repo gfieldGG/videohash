@@ -23,8 +23,6 @@ from .exceptions import (
     FFmpegNotFound,
     VideoHashError,
     VideoHashNoDuration,
-    FFprobeError,
-    FFprobeNoVideoDurationSpecified,
-    FFprobeVideoDurationReadError,
+    FFmpegVideoDurationReadError,
 )
 from .videohash import VideoHash, phash, phex

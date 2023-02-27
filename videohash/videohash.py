@@ -8,7 +8,7 @@ import numpy as np
 from .exceptions import (
     FFmpegError,
     FFmpegNotFound,
-    FFprobeError,
+    FFmpegVideoDurationReadError,
     VideoHashNoDuration,
 )
 from .extract import extract_frames
@@ -48,14 +48,14 @@ class VideoHash:
         if not video_path.is_file():
             raise FileNotFoundError(f"No video found at '{self.video_path}'")
 
+        ffmpeg_path = _check_ffmpeg(ffmpeg_path=ffmpeg_path)
+
         try:
-            self.duration = video_duration(self.video_path)
-        except FFprobeError as e:
+            self.duration = video_duration(self.video_path, ffmpeg_path)
+        except FFmpegVideoDurationReadError as e:
             raise VideoHashNoDuration(
                 f"Failed to get video duration using ffprobe. Cannot generate phash without duration."
             ) from e
-
-        ffmpeg_path = _check_ffmpeg(ffmpeg_path=ffmpeg_path)
 
         self._frame_count = frame_count
         self._frame_size = frame_size

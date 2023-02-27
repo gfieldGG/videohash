@@ -41,19 +41,7 @@ class FFmpegFailedToExtractFrames(FFmpegError):
     pass
 
 
-class FFprobeError(VideoHashError):
-    """Base error for ffprobe exceptions."""
-
-    pass
-
-
-class FFprobeVideoDurationReadError(FFprobeError):
-    """FFprobe failed to get duration from video file."""
-
-    pass
-
-
-class FFprobeNoVideoDurationSpecified(FFprobeError):
-    """First video stream does not have a specified duration."""
+class FFmpegVideoDurationReadError(FFmpegError):
+    """FFmpeg failed to get duration from video file."""
 
     pass

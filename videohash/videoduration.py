@@ -1,34 +1,33 @@
 from pathlib import Path
+import re
 
 from .utils import runn
-from .exceptions import FFprobeNoVideoDurationSpecified, FFprobeVideoDurationReadError
+from .exceptions import FFmpegError
 
 
-def video_duration(video_path: Path) -> float:
-    """Get video duration using FFprobe."""
+def _timestamp_to_s(timestamp: str) -> float:
+    hours, minutes, seconds = map(float, timestamp.split(":"))
+    total_seconds = hours * 3600 + minutes * 60 + seconds
+
+    return total_seconds
+
+
+def video_duration(video_path: Path, ffmpeg_path: Path | str):
     args = [
-        "ffprobe",
+        f"{ffmpeg_path}",
         "-v",
-        "error",
-        "-select_streams",
-        "v:0",
-        "-show_entries",
-        "format=duration",
-        "-of",
-        "default=noprint_wrappers=1:nokey=1",
+        "32",
+        "-hide_banner",
         "-i",
         f"{video_path}",
     ]
-    succ, outs = runn([args], 1, getout=True, raw=False)
+    succ, outs = runn([args], 1, getout=False, geterr=True, raw=False)
 
-    if succ:
-        try:
-            return float(outs[0].strip())
-        except ValueError as e:
-            raise FFprobeNoVideoDurationSpecified(
-                f"No duration on first video stream of '{video_path}'"
-            ) from None
-
-    raise FFprobeVideoDurationReadError(
-        f"ffprobe error while trying to read video duration from '{video_path}'"
+    match = re.search(
+        r"Duration\:(\s\d?\d\d\:\d\d\:\d\d\.\d\d)\,",
+        outs[0],  # type:ignore
     )
+    if match:
+        return _timestamp_to_s(match.group(1))
+
+    raise FFmpegError(f"Failed to read duration for file '{video_path}'")
