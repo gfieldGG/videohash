@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from videohash import phex, phash, VideoHash
+from videohash import phex, phash, VideoHash, VideoHashNoDuration
 
 
 @pytest.fixture
@@ -83,6 +83,15 @@ def test_videohash_hash_length(videofile, hash_length):
     assert len(vh.hex) == hash_length // 4
 
 
+@pytest.mark.gold
+@pytest.mark.integration
 def test_videohash_videopathtype():
     VideoHash("./tests/gold/rocket/video.mkv")
     VideoHash(Path("./tests/gold/rocket/video.mkv"))
+
+
+@pytest.mark.gold
+@pytest.mark.integration
+def test_videohash_noduration():
+    with pytest.raises(VideoHashNoDuration):
+        VideoHash(Path("./tests/gold/rocket-noduration/video.mp4"))

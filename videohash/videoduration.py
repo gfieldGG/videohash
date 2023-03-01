@@ -2,7 +2,7 @@ from pathlib import Path
 import re
 
 from .utils import runn
-from .exceptions import FFmpegError
+from .exceptions import FFmpegVideoDurationReadError
 
 
 def _timestamp_to_s(timestamp: str) -> float:
@@ -30,4 +30,6 @@ def video_duration(video_path: Path, ffmpeg_path: Path | str):
     if match:
         return _timestamp_to_s(match.group(1))
 
-    raise FFmpegError(f"Failed to read duration for file '{video_path}'")
+    raise FFmpegVideoDurationReadError(
+        f"Failed to read duration for file '{video_path}'"
+    )
