@@ -24,7 +24,7 @@ def video_duration(video_path: Path, ffmpeg_path: Path | str):
     succ, outs = runn([args], 1, getout=False, geterr=True, raw=False)
 
     match = re.search(
-        r"Duration\:(\s\d?\d\d\:\d\d\:\d\d\.\d\d)\,",
+        r"Duration\:\s(\d?\d\d\:\d\d\:\d\d\.\d+)\,",
         outs[0],  # type:ignore
     )
     if match:
