@@ -1,5 +1,4 @@
 from pathlib import Path
-from subprocess import check_output
 from math import isqrt
 
 import imagehash
