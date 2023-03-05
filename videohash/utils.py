@@ -56,8 +56,6 @@ def runn(
         for p in procs:
             out, err = p.communicate()
 
-            output = None
-
             if getout or geterr:
                 if raw:
                     outputs.append((out or b"") + (err or b""))
@@ -66,13 +64,12 @@ def runn(
                         (out or b"").decode(errors="ignore")
                         + (err or b"").decode(errors="ignore")
                     )
-
-            if p.returncode:  # error
-                if not getout or geterr:
+            else:
+                if p.returncode:  # error
                     outputs.append(argstostr(p.args))
-                succ = False
+                    succ = False
 
-    return True, outputs
+    return succ, outputs
 
 
 def hex_to_bitstr(s: str) -> str:
