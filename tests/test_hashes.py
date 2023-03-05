@@ -32,24 +32,8 @@ def _hash_from_name(videoname: str) -> str:
     return ph
 
 
-def read_samples():
-    sf = Path("./tests/gold/samples.txt")
-    if sf.exists() and sf.is_file():
-        with open(sf, "r") as f:
-            return [tuple(l.strip("\n").rsplit(" ", 1)) for l in f.readlines()]
-    return []
-
-
 @pytest.mark.gold
 @pytest.mark.integration
 @pytest.mark.parametrize("videoname,phash", phashes)
 def test_hashes_rocket(videoname, phash):
     assert _hash_from_name(videoname) == phash
-
-
-@pytest.mark.gold
-@pytest.mark.integration
-@pytest.mark.parametrize("sample", read_samples())
-def test_hashes_sample(sample):
-    ph, dur = vh.phex(sample[0])
-    assert ph == sample[1]

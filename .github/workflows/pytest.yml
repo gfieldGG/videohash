@@ -4,6 +4,9 @@
 # `branches: [main], then this actions runs _twice_ on pull requests, which is
 # annoying.
 
+name: "pytest"
+
+
 on:
   push:
     branches: [master]
@@ -20,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      
+
       - name: Setup FFmpeg
         uses: FedericoCarboni/setup-ffmpeg@v2
 
