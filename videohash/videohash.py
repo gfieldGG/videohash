@@ -29,11 +29,13 @@ class VideoHash:
         hash_length: int = 256,
         frame_count: int = 16,
         frame_size: int = 240,
+        maxerrors: int = 1,
         ffmpeg_threads: int = 4,
         ffmpeg_path: Path | str = "ffmpeg",
     ) -> None:
         """
         :param video_path: Absolute path of the input video file.
+        :param maxerrors: Maximum number of failed extracted frames (replaced by a black frame).
         :return: None
         """
         if hash_length < 4 or isqrt(hash_length) ** 2 != hash_length:
@@ -67,6 +69,7 @@ class VideoHash:
             frame_size=self._frame_size,
             ffmpeg_threads=ffmpeg_threads,
             ffmpeg_path=ffmpeg_path,
+            maxerrors=maxerrors,
         )
 
         self._collage = make_collage(

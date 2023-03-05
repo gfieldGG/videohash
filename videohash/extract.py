@@ -76,6 +76,7 @@ def extract_frames(
     frame_size: int,
     ffmpeg_threads: int,
     ffmpeg_path: Path | str,
+    maxerrors: int,
 ) -> list[Image.Image]:
     crop = _detect_crop(
         video_path=video_path,
@@ -113,14 +114,19 @@ def extract_frames(
 
     # try to parse stdouts as Images
     frames: list[Image.Image] = []
+    errs = 0
     for i, x in enumerate(outs):
         try:
             img = Image.open(io.BytesIO(x))  # type:ignore
 
         except UnidentifiedImageError:
-            raise FFmpegFailedToExtractFrames(
-                f"Error extracting frame #{i} at timestamp '{timestamps[i]}' from '{video_path}'"
-            ) from None
+            if errs < maxerrors:
+                errs += 1
+                img = Image.new("RGB", (frame_size, frame_size))
+            else:
+                raise FFmpegFailedToExtractFrames(
+                    f"Too many errors extracting frames from '{video_path}'\nMost recently frame #{i} at timestamp '{timestamps[i]}'"
+                ) from None
 
         frames.append(img)
 
