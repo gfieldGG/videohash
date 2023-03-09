@@ -69,24 +69,14 @@ def _detect_crop(
     return []
 
 
-def extract_frames(
+def _extract_frames(
     video_path: Path,
-    duration: float,
-    frame_count: int,
+    timestamps: list[float],
+    crop: list[str],
     frame_size: int,
     ffmpeg_threads: int,
     ffmpeg_path: Path | str,
-    maxerrors: int,
-) -> list[Image.Image]:
-    crop = _detect_crop(
-        video_path=video_path,
-        duration=duration,
-        ffmpeg_path=ffmpeg_path,
-    )
-
-    # timestamps to extract
-    timestamps = _get_timestamps(duration, frame_count)
-
+) -> list[bytes]:
     # build all commands
     commands: list[list[str]] = []
     for i, ts in enumerate(timestamps):
@@ -112,12 +102,44 @@ def extract_frames(
 
     succ, outs = runn(commands, n=ffmpeg_threads, getout=True, raw=True)
 
+    return outs  # type:ignore
+
+
+def extract_frames(
+    video_path: Path,
+    duration: float,
+    frame_count: int,
+    frame_size: int,
+    ffmpeg_threads: int,
+    ffmpeg_path: Path | str,
+    maxerrors: int,
+) -> list[Image.Image]:
+    # get crop
+    crop = _detect_crop(
+        video_path=video_path,
+        duration=duration,
+        ffmpeg_path=ffmpeg_path,
+    )
+
+    # timestamps to extract
+    timestamps = _get_timestamps(duration, frame_count)
+
+    # extract frames
+    frameouts = _extract_frames(
+        video_path=video_path,
+        timestamps=timestamps,
+        crop=crop,
+        frame_size=frame_size,
+        ffmpeg_threads=ffmpeg_threads,
+        ffmpeg_path=ffmpeg_path,
+    )
+
     # try to parse stdouts as Images
     frames: list[Image.Image] = []
     errs = 0
-    for i, x in enumerate(outs):
+    for i, x in enumerate(frameouts):
         try:
-            img = Image.open(io.BytesIO(x))  # type:ignore
+            img = Image.open(io.BytesIO(x))
 
         except UnidentifiedImageError:
             if errs < maxerrors:
