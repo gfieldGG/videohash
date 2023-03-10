@@ -41,7 +41,7 @@ class VideoHash:
             raise ValueError(
                 f"Invalid hash length '{hash_length}'.\nMust be greater than or equal to 4 and a perfect square."
             )
-        self.hashlength = hash_length
+        self._hash_length = hash_length
 
         if not isinstance(video_path, Path):
             video_path = Path(video_path)
@@ -78,7 +78,7 @@ class VideoHash:
         for f in frames:
             f.close()
 
-        self.hash, self.hex = _calc_hash(self._collage, self.hashlength)
+        self.hash, self.hex = _calc_hash(self._collage, self._hash_length)
         self._collage.close()
 
     def __str__(self) -> str:
@@ -95,7 +95,7 @@ class VideoHash:
         :return: Developer's representation of the instance.
         """
 
-        return f"VideoHash(hash={self.hex}, hashlength={self.hashlength}"
+        return f"VideoHash(hash={self.hex}, hashlength={self._hash_length})"
 
     def __len__(self) -> int:
         """
