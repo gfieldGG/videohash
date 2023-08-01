@@ -18,6 +18,9 @@ def read_samples():
 @pytest.mark.integration
 @pytest.mark.parametrize("sample", read_samples())
 def test_samples_hash(sample):
+    if not Path(sample[0]).exists():
+        pytest.skip(f"Sample file does not exist (anymore): {sample[0]}")
+
     ph, dur = vh.phex(sample[0])
     assert ph == sample[1]
 
@@ -25,5 +28,8 @@ def test_samples_hash(sample):
 @pytest.mark.gold
 @pytest.mark.parametrize("sample", read_samples())
 def test_samples_duration(sample):
+    if not Path(sample[0]).exists():
+        pytest.skip(f"Sample file does not exist (anymore): {sample[0]}")
+
     dur = video_duration(sample[0], "ffmpeg")
     assert dur == float(sample[2])
