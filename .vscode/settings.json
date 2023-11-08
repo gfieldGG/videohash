@@ -9,7 +9,10 @@
 	"ruff.importStrategy": "fromEnvironment",
 	"ruff.lint.args": [
 		"--config=${workspaceFolder}/pyproject.toml"
-	]
+	],
 	// "black-formatter.importStrategy": "fromEnvironment",
+	"[python]": {
+		"editor.defaultFormatter": "ms-python.black-formatter"
+	},
 	// "mypy-type-checker.importStrategy": "useBundled",
 }
