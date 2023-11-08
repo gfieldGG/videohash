@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "videohash"
-version = "8.1.0"
+version = "8.1.1"
 authors = ["gfield <github@gfield.de>", "Akash Mahanty <akamhy@yahoo.com>"]
 description = "Near Duplicate Video Detection (Perceptual Video Hashing) - Get a 256-bit comparable hash-value for any video. "
 license = "MIT"
@@ -8,14 +8,14 @@ homepage = "https://github.com/gfieldGG/videohash"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-Pillow = "^9.4.0"
+Pillow = "^10.1.0"
 ImageHash = "^4.3.1"
-numpy = ">=1.23,<1.25"
+numpy = ">=1.23,<1.26"
 
 [tool.poetry.group.dev.dependencies]
-black = "^23.1.0"
-mypy = "^1.0.1"
-types-Pillow = ">=9.4.0"
+black = "^23.11.0"
+mypy = "^1.6.1"
+types-Pillow = ">=10.1.0.0"
 notebook = ">=6.5.2"
 pytest = ">=7.2.1"
 pytest-cov = ">=4.0.0"
@@ -30,10 +30,14 @@ target-version = ["py311"]
 [tool.mypy]
 implicit_optional = true
 
+[tool.ruff]
+ignore = ["E741"]
+
 [tool.pytest.ini_options]
 markers = ["gold", "integration"]
 addopts = ["--cov"]
 
 [tool.coverage.run]
 branch = true
+include = ["videohash/*.py"]
 omit = ["tests/*", ".venv/*", "*/__init__.py", "*/__version__.py", "*/exceptions.py"]

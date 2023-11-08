@@ -6,14 +6,10 @@
 	"python.testing.pytestEnabled": true,
 	"python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
 	"python.envFile": "${workspaceFolder}/.venv",
-	"python.formatting.provider": "black",
-	"python.linting.pylintEnabled": true,
-	"python.linting.mypyEnabled": true,
-	"python.linting.flake8Enabled": true,
-	"python.linting.flake8Args": [
-		"--max-line-length=88",
-		"--docstring-convention=all",
-		"--ignore=E203,E501,E741,W503,F401,F841,D",
-		"--select=C,E,F,W,T,D101,D107,D201,D204,D205,D206,D207,D208,D209,D211,D213,D214,D215,D300,D401,D403,D404"
-	],
+	"ruff.importStrategy": "fromEnvironment",
+	"ruff.lint.args": [
+		"--config=${workspaceFolder}/pyproject.toml"
+	]
+	// "black-formatter.importStrategy": "fromEnvironment",
+	// "mypy-type-checker.importStrategy": "useBundled",
 }
