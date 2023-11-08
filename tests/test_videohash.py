@@ -79,7 +79,7 @@ def test_videohash_hash_length(videofile, hash_length):
 
     assert len(vh.hash) == hash_length
     assert len(vh) == hash_length
-    assert vh.hashlength == hash_length
+    assert vh._hash_length == hash_length
     assert len(vh.hex) == hash_length // 4
 
 

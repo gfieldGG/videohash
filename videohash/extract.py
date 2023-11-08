@@ -69,23 +69,14 @@ def _detect_crop(
     return []
 
 
-def extract_frames(
+def _extract_frames(
     video_path: Path,
-    duration: float,
-    frame_count: int,
+    timestamps: list[float],
+    crop: list[str],
     frame_size: int,
     ffmpeg_threads: int,
     ffmpeg_path: Path | str,
-) -> list[Image.Image]:
-    crop = _detect_crop(
-        video_path=video_path,
-        duration=duration,
-        ffmpeg_path=ffmpeg_path,
-    )
-
-    # timestamps to extract
-    timestamps = _get_timestamps(duration, frame_count)
-
+) -> list[bytes]:
     # build all commands
     commands: list[list[str]] = []
     for i, ts in enumerate(timestamps):
@@ -111,16 +102,53 @@ def extract_frames(
 
     succ, outs = runn(commands, n=ffmpeg_threads, getout=True, raw=True)
 
+    return outs  # type:ignore
+
+
+def extract_frames(
+    video_path: Path,
+    duration: float,
+    frame_count: int,
+    frame_size: int,
+    ffmpeg_threads: int,
+    ffmpeg_path: Path | str,
+    maxerrors: int,
+) -> list[Image.Image]:
+    # get crop
+    crop = _detect_crop(
+        video_path=video_path,
+        duration=duration,
+        ffmpeg_path=ffmpeg_path,
+    )
+
+    # timestamps to extract
+    timestamps = _get_timestamps(duration, frame_count)
+
+    # extract frames
+    frameouts = _extract_frames(
+        video_path=video_path,
+        timestamps=timestamps,
+        crop=crop,
+        frame_size=frame_size,
+        ffmpeg_threads=ffmpeg_threads,
+        ffmpeg_path=ffmpeg_path,
+    )
+
     # try to parse stdouts as Images
     frames: list[Image.Image] = []
-    for i, x in enumerate(outs):
+    errs = 0
+    for i, x in enumerate(frameouts):
         try:
-            img = Image.open(io.BytesIO(x))  # type:ignore
+            img = Image.open(io.BytesIO(x))
 
         except UnidentifiedImageError:
-            raise FFmpegFailedToExtractFrames(
-                f"Error extracting frame #{i} at timestamp '{timestamps[i]}' from '{video_path}'"
-            ) from None
+            if errs < maxerrors:
+                errs += 1
+                img = Image.new("RGB", (frame_size, frame_size))
+            else:
+                raise FFmpegFailedToExtractFrames(
+                    f"Too many errors extracting frames from '{video_path}'\nMost recently frame #{i} at timestamp '{timestamps[i]}'"
+                ) from None
 
         frames.append(img)
 

@@ -1,5 +1,4 @@
 from math import isqrt
-from pathlib import Path
 from typing import Collection
 
 from PIL import Image

@@ -1,5 +1,4 @@
 from pathlib import Path
-from subprocess import check_output
 from math import isqrt
 
 import imagehash
@@ -29,18 +28,20 @@ class VideoHash:
         hash_length: int = 256,
         frame_count: int = 16,
         frame_size: int = 240,
+        maxerrors: int = 1,
         ffmpeg_threads: int = 4,
         ffmpeg_path: Path | str = "ffmpeg",
     ) -> None:
         """
         :param video_path: Absolute path of the input video file.
+        :param maxerrors: Maximum number of failed extracted frames (replaced by a black frame).
         :return: None
         """
         if hash_length < 4 or isqrt(hash_length) ** 2 != hash_length:
             raise ValueError(
                 f"Invalid hash length '{hash_length}'.\nMust be greater than or equal to 4 and a perfect square."
             )
-        self.hashlength = hash_length
+        self._hash_length = hash_length
 
         if not isinstance(video_path, Path):
             video_path = Path(video_path)
@@ -67,6 +68,7 @@ class VideoHash:
             frame_size=self._frame_size,
             ffmpeg_threads=ffmpeg_threads,
             ffmpeg_path=ffmpeg_path,
+            maxerrors=maxerrors,
         )
 
         self._collage = make_collage(
@@ -76,7 +78,7 @@ class VideoHash:
         for f in frames:
             f.close()
 
-        self.hash, self.hex = _calc_hash(self._collage, self.hashlength)
+        self.hash, self.hex = _calc_hash(self._collage, self._hash_length)
         self._collage.close()
 
     def __str__(self) -> str:
@@ -93,7 +95,7 @@ class VideoHash:
         :return: Developer's representation of the instance.
         """
 
-        return f"VideoHash(hash={self.hex}, hashlength={self.hashlength}"
+        return f"VideoHash(hash={self.hex}, hashlength={self._hash_length})"
 
     def __len__(self) -> int:
         """

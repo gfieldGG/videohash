@@ -1,22 +1,4 @@
-from pathlib import Path
-import tempfile
 import subprocess
-import uuid
-
-import numpy as np
-
-
-def get_tempdir(basedir: Path = None) -> Path:
-    base: Path = basedir or Path(tempfile.gettempdir())
-    tempdir = base / f"vh-{uuid.uuid4()}"
-    if not tempdir.exists():
-        tempdir.mkdir(parents=True, exist_ok=False)
-
-    return tempdir
-
-
-def get_files_in_dir(directory: Path) -> list[Path]:
-    return sorted([f for f in directory.iterdir() if f.is_file()])
 
 
 def argstostr(args) -> str:
@@ -70,19 +52,3 @@ def runn(
                     succ = False
 
     return succ, outputs
-
-
-def hex_to_bitstr(s: str) -> str:
-    l = len(s) * 4
-    return format(int(s, 16), f"0{l}b")
-
-
-def hamming(a, b) -> int:
-    if isinstance(a, str):
-        a = hex_to_bitstr(a)
-        a = list(map(int, a))
-    if isinstance(b, str):
-        b = hex_to_bitstr(b)
-        b = list(map(int, b))
-
-    return np.bitwise_xor(a, b).sum()
