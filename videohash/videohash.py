@@ -17,7 +17,6 @@ from .utils import runn
 
 
 class VideoHash:
-
     """
     VideoHash class provides an interface for computing a perceptual video hash for videos supported by FFmpeg.
     """
@@ -55,7 +54,7 @@ class VideoHash:
             self.duration = video_duration(self.video_path, ffmpeg_path)
         except FFmpegVideoDurationReadError as e:
             raise VideoHashNoDuration(
-                f"Failed to get video duration using ffprobe. Cannot generate phash without duration."
+                "Failed to get video duration using ffprobe. Cannot generate phash without duration."
             ) from e
 
         self._frame_count = frame_count
