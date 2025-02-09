@@ -67,7 +67,7 @@ def test_videohash_hash_length_invalid(tmp_path, hash_length):
     videofile = tmp_path / "abc"
     assert not videofile.exists()
 
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         VideoHash(videofile, hash_length=hash_length)
 
 

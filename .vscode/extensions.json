@@ -2,6 +2,5 @@
 	"recommendations": [
 		"ms-python.mypy-type-checker",
 		"charliermarsh.ruff",
-		"ms-python.black-formatter",
 	],
 }

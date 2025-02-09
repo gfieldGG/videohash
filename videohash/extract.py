@@ -58,7 +58,8 @@ def _detect_crop(
     for out in outs:
         crop_list.extend(
             re.findall(
-                r"crop\=[0-9]{1,4}:[0-9]{1,4}:[0-9]{1,4}:[0-9]{1,4}", out  # type:ignore
+                r"crop\=[0-9]{1,4}:[0-9]{1,4}:[0-9]{1,4}:[0-9]{1,4}",
+                out,  # type:ignore
             )
         )
 
@@ -159,4 +160,4 @@ def _get_timestamps(duration: float, n: int) -> list[float]:
     """Generate a list of `n` evenly spaced timestamps in `duration` excluding the start and end time."""
 
     timestamps = np.linspace(0, duration, n + 1, endpoint=False)
-    return timestamps[1:].tolist()
+    return timestamps[1:].tolist()  # type:ignore
