@@ -1,16 +1,16 @@
 [tool.poetry]
 name = "videohash"
-version = "8.1.4"
+version = "8.1.5"
 authors = ["gfield <github@gfield.de>", "Akash Mahanty <akamhy@yahoo.com>"]
 description = "Near Duplicate Video Detection (Perceptual Video Hashing) - Get a 256-bit comparable hash value for any video. "
 license = "MIT"
 homepage = "https://github.com/gfieldGG/videohash"
 
 [tool.poetry.dependencies]
-python = ">=3.11,<3.14"
-Pillow = ">=10.1.0,<11.2.0"
+python = ">=3.11,<3.15"
+Pillow = ">=10.1.0,<12.1.0"
 ImageHash = "^4.3.1"
-numpy = ">=1.23,<2.3.0"
+numpy = ">=1.23,<2.4.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = ">=0.9.5"
@@ -23,9 +23,6 @@ pytest-cov = ">=4.0.0"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.black]
-target-version = ["py313"]
 
 [tool.mypy]
 implicit_optional = true
