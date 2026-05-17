@@ -24,7 +24,7 @@ def vhobject(videofile, tmp_path):
 def test_videohash_videohash(videofile: Path):
     vhobj = VideoHash(videofile)
     assert (
-        vhobj.hex == "b052b1537b5a0cf0d8a4da8686872b242fa5f8456d472dcd705f521f862f0fbd"
+        vhobj.hex == "b052b1537b5a0cf0d8a4da8686872b242fa5fc456d472dcd705f501f862f0fbd"
     )
     assert vhobj.duration == 52.08
 
@@ -34,7 +34,7 @@ def test_videohash_videohash(videofile: Path):
 def test_videohash_phash(videofile: Path):
     ph, dur = phash(videofile)
     # fmt:off
-    assert np.array_equal(ph, np.array([True,False,True,True,False,False,False,False,False,True,False,True,False,False,True,False,True,False,True,True,False,False,False,True,False,True,False,True,False,False,True,True,False,True,True,True,True,False,True,True,False,True,False,True,True,False,True,False,False,False,False,False,True,True,False,False,True,True,True,True,False,False,False,False,True,True,False,True,True,False,False,False,True,False,True,False,False,True,False,False,True,True,False,True,True,False,True,False,True,False,False,False,False,True,True,False,True,False,False,False,False,True,True,False,True,False,False,False,False,True,True,True,False,False,True,False,True,False,True,True,False,False,True,False,False,True,False,False,False,False,True,False,True,True,True,True,True,False,True,False,False,True,False,True,True,True,True,True,True,False,False,False,False,True,False,False,False,True,False,True,False,True,True,False,True,True,False,True,False,True,False,False,False,True,True,True,False,False,True,False,True,True,False,True,True,True,False,False,True,True,False,True,False,True,True,True,False,False,False,False,False,True,False,True,True,True,True,True,False,True,False,True,False,False,True,False,False,False,False,True,True,True,True,True,True,False,False,False,False,True,True,False,False,False,True,False,True,True,True,True,False,False,False,False,True,True,True,True,True,False,True,True,True,True,False,True]))
+    assert np.array_equal(ph, np.array([True,False,True,True,False,False,False,False,False,True,False,True,False,False,True,False,True,False,True,True,False,False,False,True,False,True,False,True,False,False,True,True,False,True,True,True,True,False,True,True,False,True,False,True,True,False,True,False,False,False,False,False,True,True,False,False,True,True,True,True,False,False,False,False,True,True,False,True,True,False,False,False,True,False,True,False,False,True,False,False,True,True,False,True,True,False,True,False,True,False,False,False,False,True,True,False,True,False,False,False,False,True,True,False,True,False,False,False,False,True,True,True,False,False,True,False,True,False,True,True,False,False,True,False,False,True,False,False,False,False,True,False,True,True,True,True,True,False,True,False,False,True,False,True,True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,True,False,True,True,False,True,True,False,True,False,True,False,False,False,True,True,True,False,False,True,False,True,True,False,True,True,True,False,False,True,True,False,True,False,True,True,True,False,False,False,False,False,True,False,True,True,True,True,True,False,True,False,True,False,False,False,False,False,False,False,True,True,True,True,True,True,False,False,False,False,True,True,False,False,False,True,False,True,True,True,True,False,False,False,False,True,True,True,True,True,False,True,True,True,True,False,True]))
 
     assert dur == 52.08
     # fmt:on
@@ -44,7 +44,7 @@ def test_videohash_phash(videofile: Path):
 @pytest.mark.integration
 def test_videohash_phex(videofile: Path):
     ph, dur = phex(videofile)
-    assert ph == "b052b1537b5a0cf0d8a4da8686872b242fa5f8456d472dcd705f521f862f0fbd"
+    assert ph == "b052b1537b5a0cf0d8a4da8686872b242fa5fc456d472dcd705f501f862f0fbd"
     assert dur == 52.08
 
 

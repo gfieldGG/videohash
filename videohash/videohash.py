@@ -54,7 +54,7 @@ class VideoHash:
             self.duration = video_duration(self.video_path, ffmpeg_path)
         except FFmpegVideoDurationReadError as e:
             raise VideoHashNoDuration(
-                "Failed to get video duration using ffprobe. Cannot generate phash without duration."
+                "Failed to get video duration using FFmpeg. Cannot generate phash without duration."
             ) from e
 
         self._frame_count = frame_count

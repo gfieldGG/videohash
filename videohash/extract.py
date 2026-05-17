@@ -70,6 +70,10 @@ def _detect_crop(
     return []
 
 
+SEEK_WINDOW = 1.0
+"""Seconds for ffmpeg input and output seek window."""
+
+
 def _extract_frames(
     video_path: Path,
     timestamps: list[float],
@@ -81,20 +85,26 @@ def _extract_frames(
     # build all commands
     commands: list[list[str]] = []
     for i, ts in enumerate(timestamps):
+        w = min(SEEK_WINDOW, ts)
         commands.append(
             [
                 f"{ffmpeg_path}",
                 "-v",
                 "1",
+                "-accurate_seek",
                 "-ss",
-                f"{ts}",
+                f"{ts - w}",
                 "-i",
                 f"{video_path}",
+                "-ss",
+                f"{w}",
                 *crop,
                 "-frames:v",
                 "1",
                 "-s",
                 f"{frame_size}x{frame_size}",
+                "-c:v",
+                "bmp",
                 "-f",
                 "image2pipe",
                 "-",
