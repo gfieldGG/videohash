@@ -30,10 +30,12 @@ class VideoHash:
         maxerrors: int = 1,
         ffmpeg_threads: int = 4,
         ffmpeg_path: Path | str = "ffmpeg",
+        seek_window: float = 1.0,
     ) -> None:
         """
         :param video_path: Absolute path of the input video file.
         :param maxerrors: Maximum number of failed extracted frames (replaced by a black frame).
+        :param seek_window: Seconds for hybrid seek (input seek to ts-window, then output seek window). 0 disables hybrid seek.
         :return: None
         """
         if hash_length < 4 or isqrt(hash_length) ** 2 != hash_length:
@@ -68,6 +70,7 @@ class VideoHash:
             ffmpeg_threads=ffmpeg_threads,
             ffmpeg_path=ffmpeg_path,
             maxerrors=maxerrors,
+            seek_window=seek_window,
         )
 
         self._collage = make_collage(

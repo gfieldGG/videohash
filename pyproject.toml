@@ -32,7 +32,6 @@ ignore = ["E741"]
 
 [tool.pytest.ini_options]
 markers = ["gold", "integration"]
-addopts = ["--cov"]
 
 [tool.coverage.run]
 branch = true
