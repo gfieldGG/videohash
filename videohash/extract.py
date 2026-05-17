@@ -95,6 +95,8 @@ def _extract_frames(
                 "1",
                 "-s",
                 f"{frame_size}x{frame_size}",
+                "-c:v",
+                "bmp",
                 "-f",
                 "image2pipe",
                 "-",
