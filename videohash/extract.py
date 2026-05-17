@@ -70,6 +70,10 @@ def _detect_crop(
     return []
 
 
+SEEK_WINDOW = 1.0
+"""Seconds for ffmpeg input and output seek window."""
+
+
 def _extract_frames(
     video_path: Path,
     timestamps: list[float],
@@ -77,22 +81,23 @@ def _extract_frames(
     frame_size: int,
     ffmpeg_threads: int,
     ffmpeg_path: Path | str,
-    seek_window: float = 1.0,
 ) -> list[bytes]:
     # build all commands
     commands: list[list[str]] = []
     for i, ts in enumerate(timestamps):
-        if seek_window and seek_window > 0:
-            w = min(seek_window, ts)
-            ss_args = ["-ss", f"{ts - w}", "-i", f"{video_path}", "-ss", f"{w}"]
-        else:
-            ss_args = ["-ss", f"{ts}", "-i", f"{video_path}"]
+        w = min(SEEK_WINDOW, ts)
         commands.append(
             [
                 f"{ffmpeg_path}",
                 "-v",
                 "1",
-                *ss_args,
+                "-accurate_seek",
+                "-ss",
+                f"{ts - w}",
+                "-i",
+                f"{video_path}",
+                "-ss",
+                f"{w}",
                 *crop,
                 "-frames:v",
                 "1",
@@ -119,7 +124,6 @@ def extract_frames(
     ffmpeg_threads: int,
     ffmpeg_path: Path | str,
     maxerrors: int,
-    seek_window: float = 1.0,
 ) -> list[Image.Image]:
     # get crop
     crop = _detect_crop(
@@ -139,7 +143,6 @@ def extract_frames(
         frame_size=frame_size,
         ffmpeg_threads=ffmpeg_threads,
         ffmpeg_path=ffmpeg_path,
-        seek_window=seek_window,
     )
 
     # try to parse stdouts as Images

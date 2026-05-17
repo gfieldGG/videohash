@@ -61,14 +61,6 @@ def test_videohash_ffmpeg_threads(videofile):
 
 @pytest.mark.gold
 @pytest.mark.integration
-def test_videohash_seek_window(videofile):
-    ph_default, _ = phex(video_path=videofile)
-    ph_zero, _ = phex(video_path=videofile, seek_window=0.0)
-    assert ph_default == ph_zero
-
-
-@pytest.mark.gold
-@pytest.mark.integration
 @pytest.mark.parametrize("hash_length", [0, 1, 2, 128])
 def test_videohash_hash_length_invalid(tmp_path, hash_length):
     # exception is raised before video file is accessed
