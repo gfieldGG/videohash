@@ -69,7 +69,7 @@ def _run_one(
     getout: bool,
     geterr: bool,
     raw: bool,
-    active_procs: set,
+    active_procs: list[subprocess.Popen],
     lock: threading.Lock,
 ) -> tuple[int, str | bytes, int]:
     """Run single command and return (index, output, returncode)."""
@@ -81,12 +81,8 @@ def _run_one(
         text=False,
     )
     with lock:
-        active_procs.add(p)
-    try:
-        out, err = p.communicate()
-    finally:
-        with lock:
-            active_procs.discard(p)
+        active_procs.append(p)
+    out, err = p.communicate()
 
     if getout or geterr:
         if raw:
@@ -121,7 +117,7 @@ def runn(
     if not commands:
         return True, []
 
-    active_procs: set[subprocess.Popen] = set()
+    active_procs: list[subprocess.Popen] = []
     lock = threading.Lock()
     outputs: list[str | bytes] = [None] * len(commands)  # type: ignore[assignment]
     succ = True
@@ -150,8 +146,11 @@ def runn(
         with lock:
             procs = list(active_procs)
         for p in procs:
-            p.kill()
-            p.wait()
+            try:
+                p.kill()
+                p.wait()
+            except OSError:
+                pass
         raise
 
     return succ, outputs

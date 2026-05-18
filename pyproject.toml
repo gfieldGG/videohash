@@ -2,7 +2,7 @@
 name = "videohash"
 version = "9.1.0"
 authors = ["gfield <github@gfield.de>"]
-description = "Near Duplicate Video Detection (Perceptual Video Hashing) - Get a 256-bit comparable hash value for any video. "
+description = "Near Duplicate Video Detection (Perceptual Video Hashing) - Get a 256-bit comparable hash value for any video."
 license = "MIT"
 homepage = "https://github.com/gfieldGG/videohash"
 
