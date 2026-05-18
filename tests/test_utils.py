@@ -50,6 +50,42 @@ def test_runn_raw():
     assert [_norm_lines(o) for o in outs] == [b"hi\n"]
 
 
+def test_runn_stderr_only():
+    """geterr=True, getout=False must capture decoded stderr (used by videoduration)."""
+    cmds = [
+        [sys.executable, "-c", "import sys; print('err1', file=sys.stderr)"],
+        [sys.executable, "-c", "import sys; print('err2', file=sys.stderr)"],
+    ]
+    succ, outs = runn(cmds, n=2, getout=False, geterr=True)
+    assert succ is True
+    assert _norm_lines(outs[0]) == "err1\n"
+    assert _norm_lines(outs[1]) == "err2\n"
+
+
+def test_runn_stdout_and_stderr():
+    """getout=True, geterr=True concatenates stdout then stderr (used by cropdetect / ffmpeg -version)."""
+    cmds = [
+        [
+            sys.executable,
+            "-c",
+            "import sys; print('out'); print('err', file=sys.stderr)",
+        ],
+    ]
+    succ, outs = runn(cmds, n=1, getout=True, geterr=True)
+    assert succ is True
+    assert _norm_lines(outs[0]) == "out\nerr\n"
+
+
+def test_runn_workers_exceed_commands():
+    """n > len(commands) must not error and should still return correct outputs."""
+    cmds = [
+        [sys.executable, "-c", "print('x')"],
+    ]
+    succ, outs = runn(cmds, n=16, getout=True)
+    assert succ is True
+    assert _norm_lines(outs[0]) == "x\n"
+
+
 def test_runn_propagates_exception():
     """Invalid commands must raise immediately, not hang or swallow."""
     with pytest.raises(FileNotFoundError):
