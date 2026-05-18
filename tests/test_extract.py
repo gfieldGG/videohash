@@ -7,6 +7,7 @@ from videohash import FFmpegFailedToExtractFrames
 
 
 @pytest.mark.gold
+@pytest.mark.integration
 def test_extract_singleerror_allow():
     extract_frames(
         video_path=Path("./tests/gold/rocket/video.mkv"),
@@ -20,6 +21,7 @@ def test_extract_singleerror_allow():
 
 
 @pytest.mark.gold
+@pytest.mark.integration
 def test_extract_singleerror_error():
     with pytest.raises(FFmpegFailedToExtractFrames):
         extract_frames(
@@ -34,6 +36,7 @@ def test_extract_singleerror_error():
 
 
 @pytest.mark.gold
+@pytest.mark.integration
 def test_extract_twoerror_error():
     with pytest.raises(FFmpegFailedToExtractFrames):
         extract_frames(

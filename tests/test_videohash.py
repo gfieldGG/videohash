@@ -59,8 +59,6 @@ def test_videohash_ffmpeg_threads(videofile):
     assert dur1 == dur2 == dur3
 
 
-@pytest.mark.gold
-@pytest.mark.integration
 @pytest.mark.parametrize("hash_length", [0, 1, 2, 128])
 def test_videohash_hash_length_invalid(tmp_path, hash_length):
     # exception is raised before video file is accessed
@@ -69,6 +67,16 @@ def test_videohash_hash_length_invalid(tmp_path, hash_length):
 
     with pytest.raises(ValueError):
         VideoHash(videofile, hash_length=hash_length)
+
+
+@pytest.mark.parametrize("frame_count", [0, 2, 3, 5, 8, 15])
+def test_videohash_frame_count_invalid(tmp_path, frame_count):
+    # exception is raised before video file is accessed
+    videofile = tmp_path / "abc"
+    assert not videofile.exists()
+
+    with pytest.raises(ValueError):
+        VideoHash(videofile, frame_count=frame_count)
 
 
 @pytest.mark.gold

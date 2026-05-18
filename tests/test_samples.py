@@ -10,11 +10,12 @@ def read_samples():
     sf = Path("./tests/gold/samples.txt")
     if sf.exists() and sf.is_file():
         with open(sf, "r") as f:
-            return [tuple(l.strip("\n").rsplit(" ", 2)) for l in f.readlines()]
+            return [tuple(l.strip("\n").split(",", 2)) for l in f.readlines()]
     return []
 
 
 @pytest.mark.gold
+@pytest.mark.integration
 @pytest.mark.parametrize("sample", read_samples())
 def test_samples_duration(sample):
     if not Path(sample[0]).exists():

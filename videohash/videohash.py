@@ -42,6 +42,11 @@ class VideoHash:
             )
         self._hash_length = hash_length
 
+        if frame_count < 1 or isqrt(frame_count) ** 2 != frame_count:
+            raise ValueError(
+                f"Invalid frame count '{frame_count}'.\nMust be a perfect square."
+            )
+
         if not isinstance(video_path, Path):
             video_path = Path(video_path)
         self.video_path = video_path.resolve()
