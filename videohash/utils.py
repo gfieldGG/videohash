@@ -1,10 +1,6 @@
 import subprocess
 
 
-def argstostr(args) -> str:
-    return " ".join([f'"{x}"' if " " in x else x for x in args])
-
-
 def runn(
     commands: list[list[str]] | list[str],
     n: int = 4,
@@ -48,7 +44,7 @@ def runn(
                             + (err or b"").decode(errors="ignore")
                         )
                 else:
-                    outputs.append(argstostr(p.args))
+                    outputs.append("")
 
                 if p.returncode != 0:
                     succ = False
