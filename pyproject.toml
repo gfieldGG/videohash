@@ -27,8 +27,8 @@ build-backend = "poetry.core.masonry.api"
 [tool.mypy]
 implicit_optional = true
 
-[tool.ruff]
-ignore = ["E741"]
+[tool.ruff.lint]
+ignore = ["E741", "F401"]
 
 [tool.pytest.ini_options]
 markers = ["gold", "integration"]
