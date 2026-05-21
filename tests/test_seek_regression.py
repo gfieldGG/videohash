@@ -10,6 +10,13 @@ from videohash.extract import extract_frames
 
 GOLD_DIR = Path("./tests/gold/seek-regression")
 VIDEO_PATH = GOLD_DIR / "video.mov"
+# To regenerate video.mov (first keyframe at ~0.066s — the condition that breaks single input-seek):
+#   ffmpeg -f lavfi -i testsrc=duration=35:size=320x240:rate=30 \
+#     -pix_fmt yuv420p -c:v libx265 -g 60 \
+#     -x265-params "keyint=60:min-keyint=60:scenecut=0" -an source.mp4
+#   ffmpeg -ss 0.5 -t 32.3 -i source.mp4 -c copy \
+#     -avoid_negative_ts make_zero -movflags +faststart video.mov
+# Then update EXPECTED_DURATION, EXPECTED_VIDEO_HASH, and re-commit frame_00.png…frame_15.png.
 
 # Pre-computed values from the reference synthetic video
 EXPECTED_DURATION = 32.87
