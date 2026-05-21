@@ -13,19 +13,10 @@ def _solid(color: tuple[int, int, int], size: int) -> Image.Image:
     return img
 
 
-# ---------------------------------------------------------------------------
-# Error path
-# ---------------------------------------------------------------------------
-
-
 def test_zero_frames_raises():
+    """CollageOfZeroFramesError is raised for an empty frame list."""
     with pytest.raises(CollageOfZeroFramesError):
         make_collage([], frame_size=64)
-
-
-# ---------------------------------------------------------------------------
-# Canvas dimensions
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -38,25 +29,17 @@ def test_zero_frames_raises():
     ],
 )
 def test_collage_dimensions(frame_count, frame_size, expected_side):
+    """Collage side length equals isqrt(frame_count) * frame_size."""
     frames = [_solid((128, 128, 128), frame_size) for _ in range(frame_count)]
     collage = make_collage(frames, frame_size=frame_size)
     assert collage.size == (expected_side, expected_side)
 
 
-# ---------------------------------------------------------------------------
-# Output is RGB
-# ---------------------------------------------------------------------------
-
-
 def test_collage_mode_is_rgb():
+    """Collage output is always RGB."""
     frames = [_solid((255, 0, 0), 32) for _ in range(4)]
     collage = make_collage(frames, frame_size=32)
     assert collage.mode == "RGB"
-
-
-# ---------------------------------------------------------------------------
-# Background (canvas) is black where no frame is pasted
-# ---------------------------------------------------------------------------
 
 
 def test_collage_background_is_black_for_non_square_count():
@@ -71,11 +54,6 @@ def test_collage_background_is_black_for_non_square_count():
     frames = [_solid((255, 0, 0), frame_size) for _ in range(1)]
     collage = make_collage(frames, frame_size=frame_size)
     assert collage.size == (frame_size, frame_size)
-
-
-# ---------------------------------------------------------------------------
-# Pixel placement
-# ---------------------------------------------------------------------------
 
 
 def test_frame_placement_2x2():
@@ -138,13 +116,9 @@ def test_frame_placement_3x3():
             assert px == expected, f"cell ({row},{col}) expected {expected}, got {px}"
 
 
-# ---------------------------------------------------------------------------
-# Non-default frame_size
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize("frame_size", [1, 8, 100, 256])
 def test_various_frame_sizes(frame_size):
+    """Collage scales correctly for a range of frame sizes."""
     frames = [_solid((0, 0, 0), frame_size) for _ in range(4)]
     collage = make_collage(frames, frame_size=frame_size)
     assert collage.size == (frame_size * 2, frame_size * 2)
