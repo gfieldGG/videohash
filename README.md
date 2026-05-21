@@ -1,6 +1,6 @@
 # videohash
 
-Near-duplicate video detection via perceptual hashing. Extracts frames from a video, tiles them into a collage, and computes a pHash — producing a 256-bit value you can compare across videos to measure similarity.
+Perceptual hash generator for video files, suitable for similarity detection. Extracts frames, tiles them into a collage, and computes a pHash.
 
 > [!WARNING]
 > Hashes are only comparable within the same major version (e.g. `9.x.x`). Cross-version comparisons may produce incorrect results.
