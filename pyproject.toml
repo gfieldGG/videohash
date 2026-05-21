@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "videohash"
-version = "9.1.0"
+version = "9.1.1"
 authors = ["gfield <github@gfield.de>"]
-description = "Near Duplicate Video Detection (Perceptual Video Hashing) - Get a 256-bit comparable hash value for any video."
+description = "Generate perceptual hashes for video similarity detection. "
 license = "MIT"
 homepage = "https://github.com/gfieldGG/videohash"
 
