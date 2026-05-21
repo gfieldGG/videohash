@@ -19,8 +19,8 @@ jobs:
       - name: Check if version changed
         id: version
         run: |
-          OLD=$(git show HEAD^:pyproject.toml | grep '^version = ' | head -1 | sed 's/version = "\(.*\)"/\1/')
-          NEW=$(grep '^version = ' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+          OLD=$(git show HEAD^:pyproject.toml | grep '^version = ' | head -1 | sed 's/version = "\(.*\)"/\1/' | tr -d '[:space:]')
+          NEW=$(grep '^version = ' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/' | tr -d '[:space:]')
           echo "old=$OLD"
           echo "new=$NEW"
           if [ "$OLD" != "$NEW" ]; then
