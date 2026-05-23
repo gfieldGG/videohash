@@ -1,16 +1,19 @@
-[tool.poetry]
+[project]
 name = "videohash"
 version = "9.2.1"
-authors = ["gfield <github@gfield.de>"]
 description = "Generate perceptual hashes for video similarity detection. "
+readme = "README.md"
 license = "MIT"
-homepage = "https://github.com/gfieldGG/videohash"
+authors = [{ name = "gfield", email = "github@gfield.de" }]
+requires-python = ">=3.11,<3.16"
+dependencies = [
+	"Pillow>=10.1.0,<=12.2.0",
+	"ImageHash>=4.3.1,<=4.3.2",
+	"numpy>=1.23,<2.5.0",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.11,<3.16"
-Pillow = ">=10.1.0,<=12.2.0"
-ImageHash = ">=4.3.1,<=4.3.2"
-numpy = ">=1.23,<2.5.0"
+[project.urls]
+Repository = "https://github.com/gfieldGG/videohash"
 
 [tool.poetry.group.dev.dependencies]
 ruff = ">=0.9.5"
