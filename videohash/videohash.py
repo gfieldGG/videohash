@@ -5,15 +5,12 @@ import imagehash
 import numpy as np
 
 from .exceptions import (
-    FFmpegError,
-    FFmpegNotFound,
     FFmpegVideoDurationReadError,
     VideoHashNoDuration,
 )
 from .extract import extract_frames
 from .collage import make_collage
 from .videoduration import video_duration
-from .utils import runn
 
 
 class VideoHash:
@@ -52,8 +49,6 @@ class VideoHash:
         self.video_path = video_path.resolve()
         if not video_path.is_file():
             raise FileNotFoundError(f"No video found at '{self.video_path}'")
-
-        ffmpeg_path = _check_ffmpeg(ffmpeg_path=ffmpeg_path)
 
         try:
             self.duration = video_duration(self.video_path, ffmpeg_path)
@@ -117,31 +112,6 @@ def _calc_hash(img, hashlen: int) -> tuple[np.ndarray, str]:
     hash: np.ndarray = ih.hash.flatten()
     hex: str = f"{ih}"
     return hash, hex
-
-
-def _check_ffmpeg(ffmpeg_path: Path | str) -> Path | str:
-    """
-    Check the FFmpeg path and run 'ffmpeg -version' to verify that FFmpeg is found and works.
-    """
-    if isinstance(ffmpeg_path, Path):
-        ffmpeg_path = ffmpeg_path.resolve()
-
-    try:
-        succ, outs = runn(
-            [[f"{ffmpeg_path}", "-version"]],
-            n=1,
-            getout=True,
-            geterr=True,
-            raw=False,
-        )
-    except (FileNotFoundError, OSError):
-        raise FFmpegNotFound(f"FFmpeg not found at '{ffmpeg_path}'")
-    else:
-        if "ffmpeg version" not in outs[0]:
-            raise FFmpegError(
-                f"Unexpected response for '{ffmpeg_path} -version':\n{outs[0]}"  # type:ignore
-            )
-    return ffmpeg_path
 
 
 def phash(video_path: Path, **kwargs) -> tuple[np.ndarray, float]:

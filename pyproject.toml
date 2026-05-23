@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "videohash"
-version = "9.1.1"
+version = "9.2.0"
 authors = ["gfield <github@gfield.de>"]
 description = "Generate perceptual hashes for video similarity detection. "
 license = "MIT"

@@ -2,7 +2,7 @@ from pathlib import Path
 import re
 
 from .utils import runn
-from .exceptions import FFmpegVideoDurationReadError
+from .exceptions import FFmpegNotFound, FFmpegVideoDurationReadError
 
 
 def _timestamp_to_s(timestamp: str) -> float:
@@ -21,7 +21,12 @@ def video_duration(video_path: Path, ffmpeg_path: Path | str):
         "-i",
         f"{video_path}",
     ]
-    succ, outs = runn([args], 1, getout=False, geterr=True, raw=False)
+    try:
+        succ, outs = runn([args], 1, getout=False, geterr=True, raw=False)
+    except (FileNotFoundError, OSError):
+        # Raised by subprocess when the executable is missing; missing input files
+        # are reported by FFmpeg on stderr and handled as duration read failures.
+        raise FFmpegNotFound(f"FFmpeg not found at '{ffmpeg_path}'") from None
 
     match = re.search(
         r"Duration\:\s(\d?\d\d\:\d\d\:\d\d\.\d+)\,",
