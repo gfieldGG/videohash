@@ -50,13 +50,11 @@ def test_videohash_phex(videofile: Path):
 
 @pytest.mark.gold
 @pytest.mark.integration
-def test_videohash_ffmpeg_threads(videofile):
-    ph1, dur1 = phex(video_path=videofile, ffmpeg_threads=1)
-    ph1, dur1 = phex(video_path=videofile, ffmpeg_threads=4)
-    ph2, dur2 = phex(video_path=videofile, ffmpeg_threads=8)
-    ph3, dur3 = phex(video_path=videofile, ffmpeg_threads=16)
-    assert ph1 == ph2 == ph3
-    assert dur1 == dur2 == dur3
+@pytest.mark.parametrize("ffmpeg_threads", [1, 4, 8, 16])
+def test_videohash_ffmpeg_threads(videofile, ffmpeg_threads):
+    ph, dur = phex(video_path=videofile, ffmpeg_threads=ffmpeg_threads)
+    assert ph == "b052b1537b5a0cf0d8a4da8686872b242fa5fc456d472dcd705f501f862f0fbd"
+    assert dur == 52.08
 
 
 @pytest.mark.parametrize("hash_length", [0, 1, 2, 128])

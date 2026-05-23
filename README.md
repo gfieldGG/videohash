@@ -9,7 +9,7 @@ Forked from [akamhy/videohash](https://github.com/akamhy/videohash).
 Key improvements:
 
 - **Input-side seeking** — FFmpeg seeks directly to each timestamp without full decode, dramatically faster on large files and slow/network drives
-- **Fixed frame count at predictable timestamps** — upstream extracts one frame per second (variable count); this fork samples a fixed number of evenly-spaced frames regardless of duration, making hashes stable across speed-altered versions of the same video
+- **Fixed frame count at predictable timestamps** — samples a fixed number of evenly-spaced frames regardless of duration, making hashes stable across speed-altered versions of the same video
 - **Configurable hash length** — any perfect square bit length, default 256-bit
 
 ---
